@@ -1,0 +1,915 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bon Vibe Captain</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #060F1A; --surface: #0C1D2E; --card: #102236; --border: #1A3452;
+      --gold: #C8A84A; --gold-l: #E2C270; --gold-d: #7A6130;
+      --cream: #EDE0C4; --text: #DDD5C0; --dim: #5E7A90;
+      --red: #D94040; --orange: #D97706; --green: #22C48A;
+    }
+    body { background: var(--bg); color: var(--text); font-family: 'Outfit', sans-serif; min-height: 100vh; }
+    ::-webkit-scrollbar { width: 4px; height: 4px; }
+    ::-webkit-scrollbar-track { background: var(--surface); }
+    ::-webkit-scrollbar-thumb { background: var(--gold-d); border-radius: 2px; }
+
+    /* LAYOUT */
+    .page { min-height: 100vh; }
+    .container { max-width: 900px; margin: 0 auto; padding: 28px 20px; }
+    .container-sm { max-width: 700px; margin: 0 auto; padding: 24px 20px; }
+
+    /* NAVBAR */
+    .navbar {
+      background: var(--surface); border-bottom: 1px solid var(--border);
+      padding: 0 20px; height: 60px; display: flex; align-items: center;
+      justify-content: space-between; position: sticky; top: 0; z-index: 100;
+    }
+    .navbar-left { display: flex; align-items: center; gap: 12px; }
+    .navbar-title { font-family: 'Cormorant Garamond', serif; font-size: 18px; font-weight: 700; color: var(--gold); }
+    .btn-back {
+      background: none; border: 1px solid var(--border); color: var(--gold);
+      padding: 5px 12px; border-radius: 6px; cursor: pointer; font-size: 13px;
+      font-family: 'Outfit', sans-serif;
+    }
+    .btn-logout {
+      background: none; border: 1px solid var(--border); color: var(--dim);
+      padding: 5px 12px; border-radius: 6px; cursor: pointer; font-size: 12px;
+      font-family: 'Outfit', sans-serif;
+    }
+
+    /* BUTTONS */
+    .btn {
+      border-radius: 8px; font-family: 'Outfit', sans-serif; font-weight: 600;
+      cursor: pointer; letter-spacing: 0.4px; transition: all 0.18s; border: none;
+      padding: 10px 18px; font-size: 14px;
+    }
+    .btn-gold { background: linear-gradient(135deg, var(--gold), var(--gold-l)); color: #0A1A2A; border: 1px solid var(--gold-l); }
+    .btn-gold:hover { opacity: 0.9; transform: translateY(-1px); }
+    .btn-outline { background: transparent; border: 1px solid var(--gold); color: var(--gold); }
+    .btn-ghost { background: transparent; border: 1px solid var(--border); color: var(--text); }
+    .btn-sm { padding: 6px 10px; font-size: 12px; }
+    .btn-lg { padding: 14px 26px; font-size: 16px; }
+    .btn-full { width: 100%; }
+    .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+    /* INPUTS */
+    input, select, textarea {
+      width: 100%; padding: 11px 14px; background: var(--card);
+      border: 1px solid var(--border); border-radius: 8px; color: var(--text);
+      font-size: 14px; font-family: 'Outfit', sans-serif; outline: none;
+      color-scheme: dark;
+    }
+    input:focus, select:focus, textarea:focus { border-color: var(--gold); }
+    label.field-label {
+      font-size: 12px; color: var(--dim); display: block; margin-bottom: 6px;
+      text-transform: uppercase; letter-spacing: 0.8px;
+    }
+    .field { margin-bottom: 14px; }
+
+    /* CARDS */
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; }
+    .card-inner { padding: 20px; }
+
+    /* GRID */
+    .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+    .grid-auto { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }
+
+    /* TAGS */
+    .tag {
+      border-radius: 8px; padding: 6px 14px; font-size: 13px; font-weight: 600;
+      border: 1px solid transparent;
+    }
+    .tag-green { background: rgba(34,196,138,0.12); border-color: rgba(34,196,138,0.4); color: var(--green); }
+    .tag-orange { background: rgba(217,119,6,0.12); border-color: rgba(217,119,6,0.4); color: var(--orange); }
+    .tag-red { background: rgba(207,68,68,0.12); border-color: rgba(207,68,68,0.4); color: var(--red); }
+
+    /* MODAL OVERLAY */
+    .overlay {
+      position: fixed; inset: 0; background: rgba(6,15,26,0.88); z-index: 200;
+      display: flex; align-items: center; justify-content: center; padding: 20px;
+    }
+    .modal {
+      background: var(--surface); border: 1px solid var(--border); border-radius: 16px;
+      padding: 32px; width: 100%; max-width: 420px;
+      box-shadow: 0 30px 60px rgba(0,0,0,0.5);
+    }
+    .modal-title { font-family: 'Cormorant Garamond', serif; font-size: 20px; color: var(--gold); margin-bottom: 24px; }
+
+    /* BOTTOM SHEET */
+    .sheet-wrap {
+      position: fixed; inset: 0; background: rgba(6,15,26,0.88); z-index: 200;
+      display: flex; flex-direction: column; justify-content: flex-end;
+    }
+    .sheet {
+      background: var(--surface); border-top: 1px solid var(--border);
+      border-radius: 20px 20px 0 0; max-height: 88vh;
+      display: flex; flex-direction: column; overflow: hidden;
+    }
+    .sheet-header {
+      padding: 20px 24px 16px; border-bottom: 1px solid var(--border);
+      display: flex; justify-content: space-between; align-items: center; flex-shrink: 0;
+    }
+    .sheet-body { overflow-y: auto; flex: 1; padding: 16px 24px; }
+    .sheet-footer { padding: 16px 24px; border-top: 1px solid var(--border); flex-shrink: 0; }
+
+    /* TABS */
+    .tabs { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; margin-bottom: 16px; }
+    .tab {
+      padding: 8px 16px; border-radius: 8px; cursor: pointer; white-space: nowrap;
+      font-family: 'Outfit', sans-serif; font-size: 13px; transition: all 0.18s;
+      border: 1px solid var(--border); background: var(--card); color: var(--dim);
+    }
+    .tab.active { background: rgba(200,168,74,0.12); border-color: var(--gold); color: var(--gold); font-weight: 600; }
+
+    /* SCORE BAR */
+    .score-bar-wrap { display: flex; align-items: center; gap: 8px; flex: 1; }
+    .score-bar-track { flex: 1; height: 5px; background: var(--border); border-radius: 3px; overflow: hidden; }
+    .score-bar-fill { height: 100%; border-radius: 3px; transition: width 0.5s ease; }
+
+    /* MINI BAR */
+    .mini-bar { display: flex; gap: 2px; align-items: flex-end; height: 20px; }
+    .mini-bar-seg { width: 6px; min-height: 2px; border-radius: 2px; }
+
+    /* PROGRESS */
+    .prog-track { height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; }
+    .prog-fill { height: 100%; border-radius: 2px; }
+
+    /* RANGE INPUT */
+    input[type=range] {
+      -webkit-appearance: none; appearance: none;
+      background: var(--border); border-radius: 4px; height: 6px;
+      outline: none; width: 100%; padding: 0; border: none;
+    }
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none; width: 22px; height: 22px;
+      background: var(--gold); border-radius: 50%; cursor: pointer;
+      border: 2px solid var(--gold-l);
+    }
+
+    /* LOGIN PAGE */
+    .login-page {
+      min-height: 100vh;
+      background: radial-gradient(ellipse at 25% 25%, #0E2B44 0%, var(--bg) 65%);
+      display: flex; align-items: center; justify-content: center; padding: 20px;
+      position: relative; overflow: hidden;
+    }
+    .login-grid {
+      position: fixed; inset: 0; pointer-events: none;
+      background-image: linear-gradient(rgba(26,52,82,0.16) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(26,52,82,0.16) 1px, transparent 1px);
+      background-size: 56px 56px;
+    }
+    .login-box {
+      background: var(--surface); border: 1px solid var(--border); border-radius: 20px;
+      padding: 48px 40px; width: 100%; max-width: 400px; position: relative;
+      box-shadow: 0 40px 80px rgba(0,0,0,0.55);
+      z-index: 1;
+    }
+    .login-top-line {
+      position: absolute; top: 0; left: 48px; right: 48px; height: 2px;
+      background: linear-gradient(90deg, transparent, var(--gold), transparent);
+      border-radius: 0 0 4px 4px;
+    }
+    .login-header { text-align: center; margin-bottom: 36px; }
+    .login-anchor { font-size: 44px; margin-bottom: 10px; filter: drop-shadow(0 0 16px rgba(200,168,74,0.5)); }
+    .login-title { font-family: 'Cormorant Garamond', serif; font-size: 26px; font-weight: 700; color: var(--gold); letter-spacing: 2.5px; text-transform: uppercase; }
+    .login-sub { font-size: 11px; color: var(--dim); letter-spacing: 3.5px; margin-top: 6px; text-transform: uppercase; }
+    .role-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .role-btn {
+      padding: 22px 16px; background: var(--card); border: 1px solid var(--border);
+      border-radius: 12px; cursor: pointer; color: var(--text);
+      font-family: 'Outfit', sans-serif; transition: all 0.2s; text-align: center;
+    }
+    .role-btn:hover { border-color: var(--gold); }
+    .role-btn .icon { font-size: 30px; margin-bottom: 8px; }
+    .role-btn .lbl { font-size: 14px; font-weight: 600; }
+    .hint { font-size: 11px; color: var(--gold-d); margin-bottom: 16px; margin-top: 4px; }
+    .err { color: var(--red); font-size: 13px; margin-bottom: 12px; }
+    .back-link { background: none; border: none; color: var(--dim); cursor: pointer; margin-bottom: 18px; font-size: 12px; font-family: 'Outfit', sans-serif; }
+
+    /* STAT CARD */
+    .stat-card {
+      background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+      padding: 18px 20px; position: relative; overflow: hidden;
+    }
+    .stat-bar { position: absolute; top: 0; left: 0; right: 0; height: 2px; }
+    .stat-num { font-size: 32px; font-weight: 700; font-family: 'Cormorant Garamond', serif; }
+    .stat-lbl { font-size: 12px; color: var(--dim); margin-top: 2px; }
+
+    /* STUDENT CARD */
+    .student-card {
+      background: var(--card); border: 1px solid var(--border); border-radius: 14px;
+      cursor: pointer; text-align: left; transition: all 0.2s; overflow: hidden;
+      display: block; width: 100%;
+    }
+    .student-card:hover { border-color: var(--gold); transform: translateY(-2px); }
+    .student-card-body { padding: 18px 20px; }
+
+    /* SKILL ROW */
+    .skill-row {
+      padding: 14px 20px; border-bottom: 1px solid rgba(26,52,82,0.4);
+      display: flex; align-items: center; gap: 12px;
+    }
+
+    /* NOTE */
+    .note-item { border-left: 2px solid var(--gold-d); padding-left: 14px; margin-bottom: 10px; }
+    .note-date { font-size: 11px; color: var(--dim); margin-bottom: 3px; }
+    .note-text { font-size: 14px; color: var(--text); }
+
+    /* LOADING */
+    .loading { display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+    .loading-text { font-size: 18px; color: var(--gold); font-family: 'Cormorant Garamond', serif; }
+
+    /* ATTENTION CARD */
+    .attention-card {
+      background: var(--card); border-radius: 8px; padding: 8px 12px;
+    }
+
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+    .au { animation: fadeUp 0.35s ease forwards; }
+
+    @media (max-width: 480px) {
+      .login-box { padding: 36px 24px; }
+      .grid-3 { grid-template-columns: 1fr 1fr; gap: 8px; }
+      .modal { padding: 24px; }
+    }
+  </style>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+// ── CONFIG — VUL JOUW SUPABASE GEGEVENS IN ──────────────────────────────────
+const SUPABASE_URL = 'JOUW_SUPABASE_URL_HIER';        // bijv. https://abcdef.supabase.co
+const SUPABASE_KEY = 'JOUW_SUPABASE_ANON_KEY_HIER';   // lange sleutel uit Settings → API
+// ─────────────────────────────────────────────────────────────────────────────
+
+const { createClient } = supabase;
+const db = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// ── DATA ─────────────────────────────────────────────────────────────────────
+const CATS = [
+  { id:"docking",    emoji:"⚓", label:"Docking",    skills:["Aanleggen bakboord","Aanleggen stuurboord","Achteruit bakboord","Achteruit stuurboord"] },
+  { id:"manoeuvres", emoji:"🔄", label:"Manoeuvres", skills:["Turning point","Box parking","Invaren box","Uitvaren box"] },
+  { id:"wind",       emoji:"💨", label:"Wind",        skills:["Tegenwind","Wind in de rug"] },
+  { id:"veiligheid", emoji:"🛡️", label:"Veiligheid",  skills:["Veilig varen","Spiegel gebruik","Gascontrole","Rust & controle"] },
+];
+const ALL_SKILLS = CATS.flatMap(c => c.skills);
+const INSTRUCTOR_PASS = 'captain123';
+
+// ── HELPERS ──────────────────────────────────────────────────────────────────
+function latest(scores, skill) {
+  const arr = scores.filter(s => s.onderdeel === skill).sort((a,b) => new Date(a.aangemaakt_op) - new Date(b.aangemaakt_op));
+  return arr.length ? arr[arr.length-1].score : null;
+}
+function avgAll(scores) {
+  const vals = ALL_SKILLS.map(s => latest(scores, s)).filter(v => v !== null);
+  return vals.length ? vals.reduce((a,b) => a+b, 0) / vals.length : 0;
+}
+function statusOf(student, scores) {
+  const vals = ALL_SKILLS.map(s => latest(scores, s));
+  if (vals.some(v => v === null)) return 'red';
+  if (vals.every(v => v >= 8)) return 'green';
+  return avgAll(scores) >= 5.5 ? 'orange' : 'red';
+}
+function sColor(v) {
+  if (v === null || v === undefined) return '#5E7A90';
+  if (v >= 9) return '#4ADE80';
+  if (v >= 8) return '#22C48A';
+  if (v >= 7) return '#86EFAC';
+  if (v >= 4) return '#D97706';
+  return '#D94040';
+}
+const STATUS_INFO = {
+  green:  { c:'#22C48A', bg:'rgba(34,196,138,0.12)',  label:'Examen klaar',   icon:'✅' },
+  orange: { c:'#D97706', bg:'rgba(217,119,6,0.12)',   label:'Bijna klaar',    icon:'🟠' },
+  red:    { c:'#D94040', bg:'rgba(207,68,68,0.12)',   label:'Nog niet klaar', icon:'🔴' },
+};
+
+// ── STATE ────────────────────────────────────────────────────────────────────
+let state = {
+  view: 'login',        // login | instructor | detail | student
+  role: null,
+  user: null,           // { type, id? }
+  students: [],
+  selectedStudent: null,
+  selectedScores: [],
+  selectedNotes: [],
+  allScores: {},        // studentId -> scores[]
+  allNotes: {},         // studentId -> notes[]
+  loginRole: null,
+  loginPass: '',
+  loginSid: '',
+  loginErr: '',
+  loading: true,
+  showLesson: false,
+  showAdd: false,
+  lessonScores: {},
+  lessonNote: '',
+  lessonTab: 0,
+  newStudent: { naam:'', telefoon:'', email:'', wachtwoord:'' },
+  detailTab: 0,
+  editDate: false,
+  dateVal: '',
+  saving: false,
+};
+
+function setState(patch) {
+  state = { ...state, ...patch };
+  render();
+}
+
+// ── DB CALLS ─────────────────────────────────────────────────────────────────
+async function loadAll() {
+  const { data: students } = await db.from('studenten').select('*').order('naam');
+  const { data: scores }   = await db.from('scores').select('*').order('aangemaakt_op');
+  const { data: notes }    = await db.from('notities').select('*').order('aangemaakt_op');
+
+  const allScores = {};
+  const allNotes  = {};
+  (students || []).forEach(s => { allScores[s.id] = []; allNotes[s.id] = []; });
+  (scores  || []).forEach(sc => { if(allScores[sc.student_id]) allScores[sc.student_id].push(sc); });
+  (notes   || []).forEach(n  => { if(allNotes[n.student_id])   allNotes[n.student_id].push(n);   });
+
+  setState({ students: students || [], allScores, allNotes, loading: false });
+}
+
+async function saveLesson() {
+  if (!state.selectedStudent || !Object.keys(state.lessonScores).length) return;
+  setState({ saving: true });
+  const sid = state.selectedStudent.id;
+  const today = new Date().toLocaleDateString('nl-NL');
+  const scoreRows = Object.entries(state.lessonScores).map(([onderdeel, score]) => ({
+    student_id: sid, datum: today, onderdeel, score
+  }));
+  await db.from('scores').insert(scoreRows);
+  if (state.lessonNote.trim()) {
+    await db.from('notities').insert([{ student_id: sid, datum: today, tekst: state.lessonNote }]);
+  }
+  await db.from('studenten').update({ praktijk_uren: state.selectedStudent.praktijk_uren + 1 }).eq('id', sid);
+  await loadAll();
+  setState({ showLesson: false, lessonScores: {}, lessonNote: '', lessonTab: 0, saving: false });
+}
+
+async function addStudent() {
+  const n = state.newStudent;
+  if (!n.naam || !n.wachtwoord) return;
+  await db.from('studenten').insert([{ naam: n.naam, telefoon: n.telefoon, email: n.email, wachtwoord: n.wachtwoord }]);
+  await loadAll();
+  setState({ showAdd: false, newStudent: { naam:'', telefoon:'', email:'', wachtwoord:'' } });
+}
+
+async function toggleTheorie() {
+  const s = state.selectedStudent;
+  await db.from('studenten').update({ theorie: !s.theorie }).eq('id', s.id);
+  await loadAll();
+  const fresh = state.students.find(x => x.id === s.id);
+  if (fresh) setState({ selectedStudent: fresh });
+}
+
+async function saveExamDate(d) {
+  await db.from('studenten').update({ exam_datum: d }).eq('id', state.selectedStudent.id);
+  await loadAll();
+  const fresh = state.students.find(x => x.id === state.selectedStudent.id);
+  if (fresh) setState({ selectedStudent: fresh, editDate: false });
+}
+
+// ── RENDER ───────────────────────────────────────────────────────────────────
+function render() {
+  const app = document.getElementById('app');
+  if (state.loading) {
+    app.innerHTML = `<div class="loading"><div class="loading-text">⚓ Laden...</div></div>`;
+    return;
+  }
+  if (state.view === 'login')      { app.innerHTML = renderLogin();      bindLogin(); return; }
+  if (state.view === 'instructor') { app.innerHTML = renderInstructor(); bindInstructor(); return; }
+  if (state.view === 'detail')     { app.innerHTML = renderDetail();     bindDetail(); return; }
+  if (state.view === 'student')    { app.innerHTML = renderStudent();    bindStudent(); return; }
+}
+
+// ── LOGIN ─────────────────────────────────────────────────────────────────────
+function renderLogin() {
+  const r = state.loginRole;
+  return `
+  <div class="login-page">
+    <div class="login-grid"></div>
+    <div class="login-box au">
+      <div class="login-top-line"></div>
+      <div class="login-header">
+        <div class="login-anchor">⚓</div>
+        <div class="login-title">Bon Vibe Captain</div>
+        <div class="login-sub">Vaarbewijs Systeem</div>
+      </div>
+
+      ${!r ? `
+        <p style="text-align:center;color:var(--dim);font-size:13px;margin-bottom:18px;letter-spacing:1px;text-transform:uppercase;">Wie ben jij?</p>
+        <div class="role-grid">
+          <button class="role-btn" id="role-instructor">
+            <div class="icon">🎓</div><div class="lbl">Instructeur</div>
+          </button>
+          <button class="role-btn" id="role-student">
+            <div class="icon">⛵</div><div class="lbl">Student</div>
+          </button>
+        </div>
+      ` : ''}
+
+      ${r === 'instructor' ? `
+        <button class="back-link" id="btn-back-role">← Terug</button>
+        <div class="field">
+          <label class="field-label">Wachtwoord</label>
+          <input type="password" id="inp-pass" placeholder="Voer wachtwoord in..." value="${state.loginPass}" />
+          <p class="hint">Demo: captain123</p>
+        </div>
+        ${state.loginErr ? `<p class="err">${state.loginErr}</p>` : ''}
+        <button class="btn btn-gold btn-lg btn-full" id="btn-login">Inloggen als Instructeur 🎓</button>
+      ` : ''}
+
+      ${r === 'student' ? `
+        <button class="back-link" id="btn-back-role">← Terug</button>
+        <div class="field">
+          <label class="field-label">Jouw naam</label>
+          <select id="inp-sid">
+            <option value="">— Selecteer student —</option>
+            ${state.students.map(s => `<option value="${s.id}" ${state.loginSid===s.id?'selected':''}>${s.naam}</option>`).join('')}
+          </select>
+        </div>
+        <div class="field">
+          <label class="field-label">Wachtwoord</label>
+          <input type="password" id="inp-pass" placeholder="Voer wachtwoord in..." value="${state.loginPass}" />
+          <p class="hint">Wachtwoord van je instructeur gekregen</p>
+        </div>
+        ${state.loginErr ? `<p class="err">${state.loginErr}</p>` : ''}
+        <button class="btn btn-gold btn-lg btn-full" id="btn-login">Inloggen als Student ⛵</button>
+      ` : ''}
+    </div>
+  </div>`;
+}
+
+function bindLogin() {
+  document.getElementById('role-instructor')?.addEventListener('click', () => setState({ loginRole:'instructor', loginErr:'' }));
+  document.getElementById('role-student')?.addEventListener('click', () => setState({ loginRole:'student', loginErr:'' }));
+  document.getElementById('btn-back-role')?.addEventListener('click', () => setState({ loginRole:null, loginErr:'' }));
+  document.getElementById('inp-pass')?.addEventListener('input', e => state.loginPass = e.target.value);
+  document.getElementById('inp-sid')?.addEventListener('change', e => state.loginSid = e.target.value);
+  document.getElementById('btn-login')?.addEventListener('click', doLogin);
+  document.getElementById('inp-pass')?.addEventListener('keydown', e => e.key==='Enter' && doLogin());
+}
+
+function doLogin() {
+  const pass = document.getElementById('inp-pass')?.value || '';
+  if (state.loginRole === 'instructor') {
+    if (pass === INSTRUCTOR_PASS) {
+      setState({ view:'instructor', user:{type:'instructor'}, loginPass:'', loginErr:'' });
+    } else {
+      setState({ loginErr:'Verkeerd wachtwoord.' });
+    }
+  } else {
+    const sid = document.getElementById('inp-sid')?.value;
+    const student = state.students.find(s => s.id === sid && s.wachtwoord === pass);
+    if (student) {
+      setState({ view:'student', user:{type:'student', id:student.id}, selectedStudent:student, loginPass:'', loginErr:'' });
+    } else {
+      setState({ loginErr:'Student of wachtwoord onjuist.' });
+    }
+  }
+}
+
+function doLogout() {
+  setState({ view:'login', user:null, loginRole:null, loginPass:'', loginSid:'', loginErr:'', selectedStudent:null, showLesson:false, showAdd:false });
+}
+
+// ── INSTRUCTOR HOME ───────────────────────────────────────────────────────────
+function renderInstructor() {
+  const students = state.students.map(s => ({ ...s, scores: state.allScores[s.id]||[] }));
+  const counts = { green:0, orange:0, red:0 };
+  students.forEach(s => counts[statusOf(s, s.scores)]++);
+
+  const cards = students.map(s => {
+    const st = statusOf(s, s.scores);
+    const sc = STATUS_INFO[st];
+    const avg = avgAll(s.scores);
+    return `
+    <button class="student-card au" data-sid="${s.id}">
+      <div style="height:3px;background:${sc.c}"></div>
+      <div class="student-card-body">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;">
+          <div>
+            <div style="font-size:16px;font-weight:600;color:var(--text);margin-bottom:2px;">${s.naam}</div>
+            <div style="font-size:11px;color:var(--dim);">${s.praktijk_uren} uur praktijk</div>
+          </div>
+          <div class="tag tag-${st}" style="font-size:11px;padding:3px 8px;">${sc.icon} ${sc.label}</div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;">
+          <div style="font-size:12px;color:var(--dim);">Gem. score</div>
+          <div class="prog-track" style="flex:1;"><div class="prog-fill" style="width:${avg*10}%;background:${sColor(Math.round(avg))};"></div></div>
+          <div style="font-size:13px;font-weight:700;color:${sColor(Math.round(avg))};">${avg.toFixed(1)}</div>
+        </div>
+        <div style="display:flex;gap:12px;font-size:11px;color:var(--dim);">
+          <span>${s.theorie ? '✅ Theorie' : '❌ Theorie'}</span>
+          ${s.exam_datum ? `<span>📅 ${s.exam_datum}</span>` : ''}
+        </div>
+      </div>
+    </button>`;
+  }).join('');
+
+  return `
+  <div class="page">
+    <nav class="navbar">
+      <div class="navbar-left"><span style="font-size:20px;">⚓</span><span class="navbar-title">Bon Vibe Captain</span></div>
+      <button class="btn-logout" id="btn-logout">Uitloggen</button>
+    </nav>
+    <div class="container">
+      <div class="grid-3" style="margin-bottom:28px;">
+        ${[{label:'Examen klaar',count:counts.green,c:'#22C48A'},{label:'Bijna klaar',count:counts.orange,c:'#D97706'},{label:'Nog niet klaar',count:counts.red,c:'#D94040'}].map(x=>`
+        <div class="stat-card">
+          <div class="stat-bar" style="background:${x.c};"></div>
+          <div class="stat-num" style="color:${x.c};">${x.count}</div>
+          <div class="stat-lbl">${x.label}</div>
+        </div>`).join('')}
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;">
+        <div style="font-family:'Cormorant Garamond',serif;font-size:22px;color:var(--cream);">Mijn Studenten <span style="color:var(--dim);font-size:16px;">(${students.length})</span></div>
+        <button class="btn btn-gold btn-sm" id="btn-add">+ Nieuwe student</button>
+      </div>
+      <div class="grid-auto">${cards}</div>
+    </div>
+    ${state.showAdd ? renderAddModal() : ''}
+  </div>`;
+}
+
+function bindInstructor() {
+  document.getElementById('btn-logout')?.addEventListener('click', doLogout);
+  document.getElementById('btn-add')?.addEventListener('click', () => setState({ showAdd:true }));
+  document.querySelectorAll('.student-card').forEach(card => {
+    card.addEventListener('click', () => {
+      const sid = card.dataset.sid;
+      const student = state.students.find(s => s.id === sid);
+      setState({ selectedStudent:student, view:'detail', detailTab:0, editDate:false, dateVal: student.exam_datum||'' });
+    });
+  });
+  if (state.showAdd) bindAddModal();
+}
+
+// ── ADD STUDENT MODAL ─────────────────────────────────────────────────────────
+function renderAddModal() {
+  const n = state.newStudent;
+  return `
+  <div class="overlay">
+    <div class="modal au">
+      <div class="modal-title">Nieuwe Student</div>
+      ${[{k:'naam',l:'Naam',p:'Marco de Vries'},{k:'telefoon',l:'Telefoon',p:'06-12345678'},{k:'email',l:'Email',p:'naam@email.nl'},{k:'wachtwoord',l:'Wachtwoord',p:'Kies een wachtwoord'}].map(f=>`
+      <div class="field">
+        <label class="field-label">${f.l}</label>
+        <input type="text" id="ns-${f.k}" placeholder="${f.p}" value="${n[f.k]||''}" />
+      </div>`).join('')}
+      <div style="display:flex;gap:10px;margin-top:24px;">
+        <button class="btn btn-ghost btn-full" id="btn-add-cancel">Annuleren</button>
+        <button class="btn btn-gold btn-full" id="btn-add-save" ${!n.naam||!n.wachtwoord?'disabled':''}>Student toevoegen</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function bindAddModal() {
+  ['naam','telefoon','email','wachtwoord'].forEach(k => {
+    document.getElementById(`ns-${k}`)?.addEventListener('input', e => {
+      state.newStudent = { ...state.newStudent, [k]: e.target.value };
+      const n = state.newStudent;
+      const btn = document.getElementById('btn-add-save');
+      if (btn) btn.disabled = !n.naam || !n.wachtwoord;
+    });
+  });
+  document.getElementById('btn-add-cancel')?.addEventListener('click', () => setState({ showAdd:false }));
+  document.getElementById('btn-add-save')?.addEventListener('click', addStudent);
+}
+
+// ── STUDENT DETAIL ────────────────────────────────────────────────────────────
+function renderDetail() {
+  const s = state.selectedStudent;
+  if (!s) return '';
+  const scores = state.allScores[s.id] || [];
+  const notes  = state.allNotes[s.id]  || [];
+  const st  = statusOf(s, scores);
+  const sc  = STATUS_INFO[st];
+  const cat = CATS[state.detailTab];
+
+  const skillRows = cat.skills.map(skill => {
+    const skillScores = scores.filter(x => x.onderdeel === skill).sort((a,b) => new Date(a.aangemaakt_op) - new Date(b.aangemaakt_op));
+    const last = skillScores.length ? skillScores[skillScores.length-1].score : null;
+    const ready = last !== null && last >= 8;
+    const miniSegs = skillScores.slice(-6).map((sc2, i) => {
+      const opacity = 0.5 + (i / Math.max(skillScores.length-1, 1)) * 0.5;
+      return `<div class="mini-bar-seg" style="height:${sc2.score*10}%;background:${sColor(sc2.score)};opacity:${opacity};"></div>`;
+    }).join('');
+    return `
+    <div class="skill-row">
+      <div style="min-width:170px;font-size:14px;color:${ready?'var(--text)':'var(--dim)'};">${skill}</div>
+      <div class="mini-bar">${miniSegs}</div>
+      <div class="score-bar-wrap">
+        <div class="score-bar-track"><div class="score-bar-fill" style="width:${(last||0)*10}%;background:${sColor(last)};"></div></div>
+        <span style="font-size:13px;font-weight:700;color:${sColor(last)};min-width:18px;text-align:right;">${last??'-'}</span>
+      </div>
+      <div style="min-width:80px;font-size:11px;color:${ready?'var(--green)':last&&last>=6?'var(--orange)':last?'var(--red)':'var(--dim)'};text-align:right;">
+        ${last===null?'–':last>=8?'✓ Klaar':last>=6?'Oefenen':'Hulp nodig'}
+      </div>
+    </div>`;
+  }).join('');
+
+  const noteItems = notes.map(n => `
+  <div class="note-item">
+    <div class="note-date">${n.datum}</div>
+    <div class="note-text">${n.tekst}</div>
+  </div>`).join('');
+
+  const tabs = CATS.map((c,i) => {
+    const catScores = scores.filter(x => c.skills.includes(x.onderdeel));
+    const catReady = c.skills.every(skill => { const l = latest(catScores.map(x=>({...x})), skill); return l !== null && l >= 8; });
+    return `<button class="tab ${state.detailTab===i?'active':''}" data-tab="${i}">${c.emoji} ${c.label}${catReady?' <span style="color:var(--green)">✓</span>':''}</button>`;
+  }).join('');
+
+  return `
+  <div class="page">
+    <nav class="navbar">
+      <div class="navbar-left">
+        <button class="btn-back" id="btn-back">← Terug</button>
+        <span class="navbar-title">${s.naam}</span>
+      </div>
+    </nav>
+    <div class="container-sm">
+      <div class="card" style="margin-bottom:20px;position:relative;overflow:hidden;">
+        <div style="height:3px;background:${sc.c};"></div>
+        <div class="card-inner">
+          <div style="display:flex;flex-wrap:wrap;gap:16px;align-items:flex-start;justify-content:space-between;">
+            <div>
+              <div style="font-family:'Cormorant Garamond',serif;font-size:24px;color:var(--cream);">${s.naam}</div>
+              <div style="font-size:13px;color:var(--dim);margin-top:3px;">${s.email||''} ${s.telefoon?'· '+s.telefoon:''}</div>
+              <div style="display:flex;gap:12px;margin-top:12px;flex-wrap:wrap;">
+                <div class="tag tag-${st}">${sc.icon} ${sc.label}</div>
+                <div class="tag" style="border-color:var(--border);color:var(--text);">⏱ ${s.praktijk_uren} uren</div>
+                <button id="btn-theorie" class="tag" style="cursor:pointer;border-color:${s.theorie?'var(--green)':'var(--border)'};background:${s.theorie?'rgba(34,196,138,0.12)':'transparent'};color:${s.theorie?'var(--green)':'var(--dim)'};">
+                  ${s.theorie?'✅ Theorie behaald':'❌ Theorie nog niet'}
+                </button>
+              </div>
+            </div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+              ${!state.editDate ? `
+                <button id="btn-edit-date" class="btn btn-ghost btn-sm">${s.exam_datum?'📅 '+s.exam_datum:'📅 Examen datum'}</button>
+              ` : `
+                <input type="date" id="inp-date" value="${state.dateVal}" style="width:auto;font-size:12px;padding:6px 10px;" />
+                <button class="btn btn-gold btn-sm" id="btn-save-date">Opslaan</button>
+                <button class="btn btn-ghost btn-sm" id="btn-cancel-date">✕</button>
+              `}
+              <button class="btn btn-gold btn-sm" id="btn-add-lesson">+ Les toevoegen</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="tabs">${tabs}</div>
+
+      <div class="card" style="margin-bottom:20px;overflow:hidden;">
+        <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;">
+          <span style="font-size:20px;">${cat.emoji}</span>
+          <span style="font-family:'Cormorant Garamond',serif;font-size:18px;color:var(--cream);">${cat.label}</span>
+        </div>
+        ${skillRows}
+      </div>
+
+      ${notes.length ? `
+      <div class="card"><div class="card-inner">
+        <div style="font-family:'Cormorant Garamond',serif;font-size:18px;color:var(--cream);margin-bottom:14px;">📝 Notities</div>
+        ${noteItems}
+      </div></div>` : ''}
+    </div>
+    ${state.showLesson ? renderLessonSheet() : ''}
+  </div>`;
+}
+
+function bindDetail() {
+  document.getElementById('btn-back')?.addEventListener('click', () => setState({ view:'instructor', selectedStudent:null }));
+  document.getElementById('btn-theorie')?.addEventListener('click', toggleTheorie);
+  document.getElementById('btn-edit-date')?.addEventListener('click', () => setState({ editDate:true }));
+  document.getElementById('btn-cancel-date')?.addEventListener('click', () => setState({ editDate:false }));
+  document.getElementById('btn-save-date')?.addEventListener('click', () => saveExamDate(document.getElementById('inp-date')?.value));
+  document.getElementById('btn-add-lesson')?.addEventListener('click', () => setState({ showLesson:true, lessonScores:{}, lessonNote:'', lessonTab:0 }));
+  document.querySelectorAll('.tab[data-tab]').forEach(t => {
+    t.addEventListener('click', () => setState({ detailTab: parseInt(t.dataset.tab) }));
+  });
+  if (state.showLesson) bindLessonSheet();
+}
+
+// ── ADD LESSON SHEET ──────────────────────────────────────────────────────────
+function renderLessonSheet() {
+  const s = state.selectedStudent;
+  const cat = CATS[state.lessonTab];
+  const totalSet = Object.keys(state.lessonScores).length;
+
+  const skillInputs = cat.skills.map(skill => {
+    const val = state.lessonScores[skill] ?? null;
+    const qBtns = [[1,3,'🔴 Hulp'],[4,6,'🟠 Oef.'],[7,8,'🟢 Goed'],[9,10,'⭐ Top']].map(([a,b,l]) => {
+      const active = val !== null && val >= a && val <= b;
+      return `<button class="q-btn" data-skill="${skill}" data-val="${b}" style="flex:1;padding:4px 0;border-radius:5px;background:${active?sColor(b)+'20':'var(--card)'};border:1px solid ${active?sColor(b):'var(--border)'};color:${active?sColor(b):'var(--dim)'};cursor:pointer;font-size:11px;font-family:'Outfit',sans-serif;">${l}</button>`;
+    }).join('');
+    return `
+    <div style="margin-bottom:20px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <span style="font-size:14px;color:var(--text);">${skill}</span>
+        <span style="font-size:20px;font-weight:700;color:${sColor(val)};min-width:32px;text-align:right;">${val??'-'}</span>
+      </div>
+      <input type="range" min="1" max="10" step="1" value="${val??5}" data-skill="${skill}"
+        style="accent-color:${val?sColor(val):'var(--dim)'};" class="lesson-range" />
+      <div style="display:flex;justify-content:space-between;margin-top:4px;">
+        ${[1,2,3,4,5,6,7,8,9,10].map(n=>`<span style="font-size:10px;color:${val===n?sColor(n):'var(--dim)'};font-weight:${val===n?700:400};">${n}</span>`).join('')}
+      </div>
+      <div style="display:flex;gap:8px;margin-top:8px;">${qBtns}</div>
+    </div>`;
+  }).join('');
+
+  const tabs = CATS.map((c,i) => {
+    const catDone = c.skills.every(s => state.lessonScores[s] !== undefined);
+    return `<button class="tab ${state.lessonTab===i?'active':''}" data-ltab="${i}">${c.emoji} ${c.label}${catDone?' ✓':''}</button>`;
+  }).join('');
+
+  return `
+  <div class="sheet-wrap">
+    <div class="sheet au">
+      <div class="sheet-header">
+        <div>
+          <div style="font-family:'Cormorant Garamond',serif;font-size:20px;color:var(--gold);">Les Toevoegen</div>
+          <div style="font-size:12px;color:var(--dim);margin-top:2px;">${s.naam} · ${totalSet} van ${ALL_SKILLS.length} ingevuld</div>
+        </div>
+        <button class="btn btn-ghost btn-sm" id="btn-lesson-cancel">✕ Annuleren</button>
+      </div>
+      <div style="display:flex;gap:8px;padding:12px 20px;border-bottom:1px solid var(--border);overflow-x:auto;flex-shrink:0;">${tabs}</div>
+      <div class="sheet-body">
+        ${skillInputs}
+        <div class="field" style="margin-top:8px;">
+          <label class="field-label">Notitie (optioneel)</label>
+          <textarea id="lesson-note" style="height:80px;resize:vertical;font-size:13px;" placeholder="Opmerkingen over de les...">${state.lessonNote}</textarea>
+        </div>
+      </div>
+      <div class="sheet-footer">
+        <button class="btn btn-gold btn-lg btn-full" id="btn-lesson-save" ${totalSet===0||state.saving?'disabled':''}>
+          ${state.saving?'Opslaan...':'💾 Les opslaan ('+totalSet+' scores)'}
+        </button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function bindLessonSheet() {
+  document.getElementById('btn-lesson-cancel')?.addEventListener('click', () => setState({ showLesson:false }));
+  document.getElementById('btn-lesson-save')?.addEventListener('click', saveLesson);
+  document.getElementById('lesson-note')?.addEventListener('input', e => state.lessonNote = e.target.value);
+
+  document.querySelectorAll('.tab[data-ltab]').forEach(t => {
+    t.addEventListener('click', () => setState({ lessonTab: parseInt(t.dataset.ltab) }));
+  });
+  document.querySelectorAll('.lesson-range').forEach(inp => {
+    inp.addEventListener('input', e => {
+      state.lessonScores = { ...state.lessonScores, [e.target.dataset.skill]: parseInt(e.target.value) };
+      render();
+    });
+  });
+  document.querySelectorAll('.q-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      state.lessonScores = { ...state.lessonScores, [btn.dataset.skill]: parseInt(btn.dataset.val) };
+      render();
+    });
+  });
+}
+
+// ── STUDENT VIEW ──────────────────────────────────────────────────────────────
+function renderStudent() {
+  const s = state.selectedStudent;
+  if (!s) return '';
+  const scores = state.allScores[s.id] || [];
+  const st  = statusOf(s, scores);
+  const sc  = STATUS_INFO[st];
+  const avg = avgAll(scores);
+  const weakSkills  = ALL_SKILLS.filter(skill => { const v = latest(scores, skill); return v === null || v < 8; });
+  const readySkills = ALL_SKILLS.filter(skill => { const v = latest(scores, skill); return v !== null && v >= 8; });
+
+  const cats = CATS.map(c => {
+    const catScores = scores.filter(x => c.skills.includes(x.onderdeel));
+    const done = c.skills.map(skill => latest(catScores, skill)).filter(v => v !== null);
+    const catAvg = done.length ? done.reduce((a,b)=>a+b,0)/done.length : 0;
+    const catReady = done.length === c.skills.length && done.every(v => v >= 8);
+    const expanded = state.expandedCat === c.id;
+
+    const skillRows = expanded ? c.skills.map(skill => {
+      const skillScores = scores.filter(x => x.onderdeel === skill).sort((a,b) => new Date(a.aangemaakt_op)-new Date(b.aangemaakt_op));
+      const last = skillScores.length ? skillScores[skillScores.length-1].score : null;
+      const ready2 = last !== null && last >= 8;
+      const mini = skillScores.slice(-6).map((sc2,i) => {
+        const op = 0.5+(i/Math.max(skillScores.length-1,1))*0.5;
+        return `<div class="mini-bar-seg" style="height:${sc2.score*10}%;background:${sColor(sc2.score)};opacity:${op};"></div>`;
+      }).join('');
+      return `
+      <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid rgba(26,52,82,0.3);">
+        <div style="font-size:12px;color:${ready2?'var(--text)':'var(--dim)'};min-width:160px;">${skill}</div>
+        <div class="mini-bar">${mini}</div>
+        <div class="score-bar-wrap">
+          <div class="score-bar-track"><div class="score-bar-fill" style="width:${(last||0)*10}%;background:${sColor(last)};"></div></div>
+          <span style="font-size:13px;font-weight:700;color:${sColor(last)};min-width:18px;text-align:right;">${last??'-'}</span>
+        </div>
+        <div style="min-width:72px;font-size:11px;color:${ready2?'var(--green)':last&&last>=6?'var(--orange)':last?'var(--red)':'var(--dim)'};text-align:right;">
+          ${last===null?'Nog niet':ready2?'✓ Klaar':last>=6?'Oefenen':'Hulp'}
+        </div>
+      </div>`;
+    }).join('') : '';
+
+    return `
+    <div class="card" style="overflow:hidden;border-color:${expanded?'var(--gold)':'var(--border)'};">
+      <button class="cat-toggle" data-cat="${c.id}" style="width:100%;background:none;border:none;padding:16px 20px;cursor:pointer;display:flex;align-items:center;gap:12px;text-align:left;">
+        <span style="font-size:22px;">${c.emoji}</span>
+        <div style="flex:1;">
+          <div style="font-size:15px;font-weight:600;color:var(--text);margin-bottom:4px;">${c.label}</div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <div class="prog-track" style="width:120px;"><div class="prog-fill" style="width:${catAvg*10}%;background:${sColor(Math.round(catAvg))};"></div></div>
+            <span style="font-size:12px;color:${sColor(Math.round(catAvg))};font-weight:600;">${catAvg.toFixed(1)}</span>
+          </div>
+        </div>
+        <div style="font-size:12px;color:${catReady?'var(--green)':'var(--dim)'};">${catReady?'✅ Klaar':`${done.length}/${c.skills.length}`}</div>
+        <span style="color:var(--dim);font-size:14px;">${expanded?'▲':'▼'}</span>
+      </button>
+      ${expanded ? `<div style="border-top:1px solid var(--border);padding:10px 20px 16px;">${skillRows}</div>` : ''}
+    </div>`;
+  }).join('');
+
+  const weakCards = weakSkills.map(skill => {
+    const v = latest(scores, skill);
+    return `
+    <div class="attention-card" style="border:1px solid ${v&&v>=6?'rgba(217,119,6,0.3)':'var(--border)'};">
+      <div style="font-size:13px;color:var(--text);">${skill}</div>
+      <div style="font-size:11px;color:${v?sColor(v):'var(--dim)'};margin-top:2px;">${v?`Laatste: ${v}`:'Nog niet gedaan'}</div>
+    </div>`;
+  }).join('');
+
+  return `
+  <div class="page">
+    <nav class="navbar">
+      <div class="navbar-left"><span style="font-size:20px;">⚓</span><span class="navbar-title">Mijn Voortgang</span></div>
+      <button class="btn-logout" id="btn-logout">Uitloggen</button>
+    </nav>
+    <div class="container-sm">
+      <div style="background:${sc.bg};border:1px solid ${sc.c}40;border-radius:16px;padding:24px;margin-bottom:20px;text-align:center;position:relative;overflow:hidden;">
+        <div style="position:absolute;top:0;left:0;right:0;height:3px;background:${sc.c};"></div>
+        <div style="font-family:'Cormorant Garamond',serif;font-size:28px;color:var(--cream);margin-bottom:4px;">Welkom, ${s.naam.split(' ')[0]}!</div>
+        <div style="font-size:18px;font-weight:700;color:${sc.c};margin-bottom:8px;">${sc.icon} ${sc.label}</div>
+        <div style="font-size:14px;color:var(--dim);">
+          ${st==='green'?'Je bent klaar voor het afvaren! Spreek een datum af met je instructeur.':''}
+          ${st==='orange'?`Nog ${weakSkills.length} onderdelen om te verbeteren naar een 8.`:''}
+          ${st==='red'?`Ga door met oefenen — je komt er. ${weakSkills.length} onderdelen hebben meer aandacht nodig.`:''}
+        </div>
+      </div>
+
+      <div class="grid-3" style="margin-bottom:20px;">
+        ${[{l:'Uren Praktijk',v:s.praktijk_uren,icon:'⏱'},{l:'Gem. Score',v:avg.toFixed(1),icon:'📊'},{l:'Klaar',v:`${readySkills.length}/${ALL_SKILLS.length}`,icon:'✅'}].map(x=>`
+        <div class="card" style="padding:16px 14px;text-align:center;">
+          <div style="font-size:22px;margin-bottom:4px;">${x.icon}</div>
+          <div style="font-size:22px;font-weight:700;color:var(--gold);font-family:'Cormorant Garamond',serif;">${x.v}</div>
+          <div style="font-size:11px;color:var(--dim);">${x.l}</div>
+        </div>`).join('')}
+      </div>
+
+      <div style="display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;">
+        <div style="background:${s.theorie?'rgba(34,196,138,0.1)':'var(--card)'};border:1px solid ${s.theorie?'var(--green)':'var(--border)'};border-radius:8px;padding:8px 14px;font-size:13px;color:${s.theorie?'var(--green)':'var(--dim)'};">
+          ${s.theorie?'✅ Theorie behaald':'❌ Theorie nog niet'}
+        </div>
+        ${s.exam_datum?`<div style="background:rgba(200,168,74,0.1);border:1px solid var(--gold-d);border-radius:8px;padding:8px 14px;font-size:13px;color:var(--gold);">📅 Examen: ${s.exam_datum}</div>`:''}
+      </div>
+
+      <div style="font-family:'Cormorant Garamond',serif;font-size:20px;color:var(--cream);margin-bottom:14px;">Onderdelen</div>
+      <div style="display:grid;gap:10px;margin-bottom:20px;">${cats}</div>
+
+      ${weakSkills.length ? `
+      <div class="card"><div class="card-inner">
+        <div style="font-family:'Cormorant Garamond',serif;font-size:18px;color:var(--cream);margin-bottom:12px;">⚠️ Aandachtspunten</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px;">${weakCards}</div>
+      </div></div>` : ''}
+    </div>
+  </div>`;
+}
+
+function bindStudent() {
+  document.getElementById('btn-logout')?.addEventListener('click', doLogout);
+  document.querySelectorAll('.cat-toggle').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const catId = btn.dataset.cat;
+      setState({ expandedCat: state.expandedCat === catId ? null : catId });
+    });
+  });
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+loadAll().then(render);
+</script>
+</body>
+</html>
