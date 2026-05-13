@@ -4,9 +4,6 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Bon Vibe Captain</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
   <style>
@@ -25,673 +22,2008 @@
 </head>
 <body>
   <div id="root"></div>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script>
+const { useState, useEffect } = React;
 
-  <script type="text/babel">
-    const { useState, useEffect } = React;
+// ── PALETTE ──────────────────────────────────────────────────────────────────
+const BG = "#060F1A";
+const SURFACE = "#0C1D2E";
+const CARD = "#102236";
+const BORDER = "#1A3452";
+const GOLD = "#C8A84A";
+const GOLD_L = "#E2C270";
+const GOLD_D = "#7A6130";
+const CREAM = "#EDE0C4";
+const TEXT = "#DDD5C0";
+const DIM = "#5E7A90";
+const RED = "#D94040";
+const ORANGE = "#D97706";
+const GREEN = "#22C48A";
 
-    // ── STORAGE (localStorage wrapper) ────────────────────────────────────────
-    const storage = {
-      get: (key) => {
-        try {
-          const v = localStorage.getItem(key);
-          return v ? { value: v } : null;
-        } catch { return null; }
+// ── DATA ─────────────────────────────────────────────────────────────────────
+const CATS = [{
+  id: "docking",
+  emoji: "⚓",
+  label: "Docking",
+  skills: ["Aanleggen bakboord", "Aanleggen stuurboord", "Achteruit bakboord", "Achteruit stuurboord"]
+}, {
+  id: "manoeuvres",
+  emoji: "🔄",
+  label: "Manoeuvres",
+  skills: ["Turning point", "Box parking", "Invaren box", "Uitvaren box"]
+}, {
+  id: "wind",
+  emoji: "💨",
+  label: "Wind",
+  skills: ["Tegenwind", "Wind in de rug"]
+}, {
+  id: "veiligheid",
+  emoji: "🛡️",
+  label: "Veiligheid",
+  skills: ["Veilig varen", "Spiegel gebruik", "Gascontrole", "Rust & controle"]
+}];
+const ALL_SKILLS = CATS.flatMap(c => c.skills);
+const SEED = [{
+  id: 1,
+  name: "Marco de Vries",
+  phone: "06-12345678",
+  email: "marco@email.nl",
+  theorie: true,
+  praktijkUren: 14,
+  examDatum: "2026-06-15",
+  password: "marco",
+  scores: {
+    "Aanleggen bakboord": [7, 8, 9],
+    "Aanleggen stuurboord": [6, 7, 8],
+    "Achteruit bakboord": [5, 7, 8],
+    "Achteruit stuurboord": [4, 6, 8],
+    "Turning point": [8, 9],
+    "Box parking": [7, 8],
+    "Invaren box": [6, 8],
+    "Uitvaren box": [7, 8],
+    "Tegenwind": [6, 8],
+    "Wind in de rug": [7, 9],
+    "Veilig varen": [8, 9, 10],
+    "Spiegel gebruik": [7, 8, 9],
+    "Gascontrole": [8, 9],
+    "Rust & controle": [7, 8, 9]
+  },
+  notes: [{
+    date: "02-05-2026",
+    text: "Uitstekende les! Marco toont veel verbetering."
+  }]
+}, {
+  id: 2,
+  name: "Sophie Jansen",
+  phone: "06-87654321",
+  email: "sophie@email.nl",
+  theorie: true,
+  praktijkUren: 8,
+  examDatum: null,
+  password: "sophie",
+  scores: {
+    "Aanleggen bakboord": [5, 7],
+    "Aanleggen stuurboord": [4, 6],
+    "Achteruit bakboord": [3, 5],
+    "Achteruit stuurboord": [3, 5],
+    "Turning point": [6, 7],
+    "Box parking": [5, 6],
+    "Invaren box": [4, 6],
+    "Uitvaren box": [5, 6],
+    "Tegenwind": [4, 6],
+    "Wind in de rug": [5, 7],
+    "Veilig varen": [6, 7],
+    "Spiegel gebruik": [5, 7],
+    "Gascontrole": [6, 7],
+    "Rust & controle": [5, 7]
+  },
+  notes: []
+}, {
+  id: 3,
+  name: "Ravi Sharma",
+  phone: "06-11223344",
+  email: "ravi@email.nl",
+  theorie: false,
+  praktijkUren: 4,
+  examDatum: null,
+  password: "ravi",
+  scores: {
+    "Aanleggen bakboord": [3, 4],
+    "Aanleggen stuurboord": [2, 4],
+    "Achteruit bakboord": [2, 3],
+    "Achteruit stuurboord": [2, 3],
+    "Turning point": [4, 5],
+    "Box parking": [3],
+    "Invaren box": [3, 4],
+    "Uitvaren box": [3],
+    "Tegenwind": [3, 4],
+    "Wind in de rug": [3, 4],
+    "Veilig varen": [4, 5],
+    "Spiegel gebruik": [3, 4],
+    "Gascontrole": [4, 5],
+    "Rust & controle": [3, 4]
+  },
+  notes: []
+}];
+
+// ── HELPERS ───────────────────────────────────────────────────────────────────
+const latest = (sc, skill) => {
+  const a = sc[skill] || [];
+  return a.length ? a[a.length - 1] : null;
+};
+const avgAll = sc => {
+  const v = ALL_SKILLS.map(s => latest(sc, s)).filter(x => x !== null);
+  return v.length ? v.reduce((a, b) => a + b, 0) / v.length : 0;
+};
+const status = s => {
+  const l = ALL_SKILLS.map(sk => latest(s.scores, sk));
+  if (l.some(v => v === null)) return "red";
+  if (l.every(v => v >= 8)) return "green";
+  return avgAll(s.scores) >= 5.5 ? "orange" : "red";
+};
+const sColor = v => {
+  if (v === null) return DIM;
+  if (v >= 9) return "#4ADE80";
+  if (v >= 8) return GREEN;
+  if (v >= 7) return "#86EFAC";
+  if (v >= 4) return ORANGE;
+  return RED;
+};
+const STATUS = {
+  green: {
+    c: GREEN,
+    bg: "rgba(34,196,138,0.12)",
+    label: "Examen klaar",
+    icon: "✅"
+  },
+  orange: {
+    c: ORANGE,
+    bg: "rgba(217,119,6,0.12)",
+    label: "Bijna klaar",
+    icon: "🟠"
+  },
+  red: {
+    c: RED,
+    bg: "rgba(207,68,68,0.12)",
+    label: "Nog niet klaar",
+    icon: "🔴"
+  }
+};
+
+// ── MICRO COMPONENTS ─────────────────────────────────────────────────────────
+const inp = {
+  width: "100%",
+  padding: "11px 14px",
+  background: CARD,
+  border: `1px solid ${BORDER}`,
+  borderRadius: 8,
+  color: TEXT,
+  fontSize: 14,
+  fontFamily: "'Outfit',sans-serif",
+  outline: "none",
+  boxSizing: "border-box"
+};
+function Btn({
+  children,
+  onClick,
+  variant = "gold",
+  size = "md",
+  full,
+  disabled
+}) {
+  const s = {
+    sm: {
+      px: 10,
+      py: 6,
+      fs: 12
+    },
+    md: {
+      px: 18,
+      py: 10,
+      fs: 14
+    },
+    lg: {
+      px: 26,
+      py: 14,
+      fs: 16
+    }
+  }[size];
+  const styles = {
+    gold: {
+      background: `linear-gradient(135deg,${GOLD},${GOLD_L})`,
+      border: `1px solid ${GOLD_L}`,
+      color: "#0A1A2A"
+    },
+    outline: {
+      background: "transparent",
+      border: `1px solid ${GOLD}`,
+      color: GOLD
+    },
+    ghost: {
+      background: "transparent",
+      border: `1px solid ${BORDER}`,
+      color: TEXT
+    },
+    danger: {
+      background: `rgba(217,64,64,0.15)`,
+      border: `1px solid ${RED}`,
+      color: RED
+    }
+  }[variant];
+  return /*#__PURE__*/React.createElement("button", {
+    onClick: onClick,
+    disabled: disabled,
+    style: {
+      ...styles,
+      padding: `${s.py}px ${s.px}px`,
+      borderRadius: 8,
+      fontFamily: "'Outfit',sans-serif",
+      fontSize: s.fs,
+      fontWeight: 600,
+      cursor: disabled ? "not-allowed" : "pointer",
+      width: full ? "100%" : "auto",
+      opacity: disabled ? 0.45 : 1,
+      letterSpacing: "0.4px",
+      transition: "all 0.18s"
+    }
+  }, children);
+}
+function ScoreBar({
+  score
+}) {
+  return /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      alignItems: "center",
+      gap: 8,
+      flex: 1,
+      minWidth: 0
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      flex: 1,
+      height: 5,
+      background: BORDER,
+      borderRadius: 3,
+      overflow: "hidden"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      height: "100%",
+      width: `${(score || 0) * 10}%`,
+      background: sColor(score),
+      borderRadius: 3,
+      transition: "width 0.5s ease"
+    }
+  })), /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontSize: 13,
+      fontWeight: 700,
+      color: sColor(score),
+      minWidth: 18,
+      textAlign: "right"
+    }
+  }, score ?? "-"));
+}
+function MiniBar({
+  scores
+}) {
+  return /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      gap: 2,
+      alignItems: "flex-end",
+      height: 20
+    }
+  }, (scores || []).slice(-6).map((s, i) => /*#__PURE__*/React.createElement("div", {
+    key: i,
+    style: {
+      width: 6,
+      minHeight: 2,
+      height: `${s * 10}%`,
+      background: sColor(s),
+      borderRadius: 2,
+      opacity: 0.5 + i / Math.max(scores.length - 1, 1) * 0.5
+    }
+  })));
+}
+function NavBar({
+  title,
+  onBack,
+  onLogout,
+  backLabel = "← Terug"
+}) {
+  return /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: SURFACE,
+      borderBottom: `1px solid ${BORDER}`,
+      padding: "0 20px",
+      height: 60,
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "space-between",
+      position: "sticky",
+      top: 0,
+      zIndex: 100
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      alignItems: "center",
+      gap: 12
+    }
+  }, onBack && /*#__PURE__*/React.createElement("button", {
+    onClick: onBack,
+    style: {
+      background: "none",
+      border: `1px solid ${BORDER}`,
+      color: GOLD,
+      padding: "5px 12px",
+      borderRadius: 6,
+      cursor: "pointer",
+      fontSize: 13,
+      fontFamily: "'Outfit',sans-serif"
+    }
+  }, backLabel), !onBack && /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontSize: 20
+    }
+  }, "\u2693"), /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontFamily: "'Cormorant Garamond',serif",
+      fontSize: 18,
+      fontWeight: 700,
+      color: GOLD
+    }
+  }, title)), onLogout && /*#__PURE__*/React.createElement("button", {
+    onClick: onLogout,
+    style: {
+      background: "none",
+      border: `1px solid ${BORDER}`,
+      color: DIM,
+      padding: "5px 12px",
+      borderRadius: 6,
+      cursor: "pointer",
+      fontSize: 12,
+      fontFamily: "'Outfit',sans-serif"
+    }
+  }, "Uitloggen"));
+}
+
+// ── LOGIN ─────────────────────────────────────────────────────────────────────
+function LoginScreen({
+  role,
+  setRole,
+  pass,
+  setPass,
+  sid,
+  setSid,
+  err,
+  onLogin,
+  students
+}) {
+  return /*#__PURE__*/React.createElement("div", {
+    style: {
+      minHeight: "100vh",
+      background: `radial-gradient(ellipse at 25% 25%, #0E2B44 0%, ${BG} 65%)`,
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      padding: 20,
+      fontFamily: "'Outfit',sans-serif",
+      position: "relative",
+      overflow: "hidden"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      position: "fixed",
+      inset: 0,
+      pointerEvents: "none",
+      backgroundImage: `linear-gradient(${BORDER}28 1px,transparent 1px),linear-gradient(90deg,${BORDER}28 1px,transparent 1px)`,
+      backgroundSize: "56px 56px"
+    }
+  }), /*#__PURE__*/React.createElement("div", {
+    style: {
+      position: "fixed",
+      inset: 0,
+      pointerEvents: "none",
+      background: "radial-gradient(ellipse at 70% 80%, #0B2E4820 0%, transparent 60%)"
+    }
+  }), /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: SURFACE,
+      border: `1px solid ${BORDER}`,
+      borderRadius: 20,
+      padding: "48px 40px",
+      width: "100%",
+      maxWidth: 400,
+      position: "relative",
+      boxShadow: `0 40px 80px rgba(0,0,0,0.55), 0 0 0 1px ${GOLD}18`,
+      zIndex: 1
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      position: "absolute",
+      top: 0,
+      left: 48,
+      right: 48,
+      height: 2,
+      background: `linear-gradient(90deg,transparent,${GOLD},transparent)`,
+      borderRadius: "0 0 4px 4px"
+    }
+  }), /*#__PURE__*/React.createElement("div", {
+    style: {
+      textAlign: "center",
+      marginBottom: 36
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 44,
+      marginBottom: 10,
+      filter: `drop-shadow(0 0 16px ${GOLD}50)`
+    }
+  }, "\u2693"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontFamily: "'Cormorant Garamond',serif",
+      fontSize: 26,
+      fontWeight: 700,
+      color: GOLD,
+      letterSpacing: "2.5px",
+      textTransform: "uppercase"
+    }
+  }, "Bon Vibe Captain"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 11,
+      color: DIM,
+      letterSpacing: "3.5px",
+      marginTop: 6,
+      textTransform: "uppercase"
+    }
+  }, "Vaarbewijs Systeem")), !role && /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("p", {
+    style: {
+      textAlign: "center",
+      color: DIM,
+      fontSize: 13,
+      marginBottom: 18,
+      letterSpacing: "1px",
+      textTransform: "uppercase"
+    }
+  }, "Wie ben jij?"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "grid",
+      gridTemplateColumns: "1fr 1fr",
+      gap: 12
+    }
+  }, [{
+    k: "instructor",
+    label: "Instructeur",
+    icon: "🎓"
+  }, {
+    k: "student",
+    label: "Student",
+    icon: "⛵"
+  }].map(r => /*#__PURE__*/React.createElement("button", {
+    key: r.k,
+    onClick: () => setRole(r.k),
+    style: {
+      padding: "22px 16px",
+      background: CARD,
+      border: `1px solid ${BORDER}`,
+      borderRadius: 12,
+      cursor: "pointer",
+      color: TEXT,
+      fontFamily: "'Outfit',sans-serif",
+      transition: "all 0.2s"
+    },
+    onMouseOver: e => {
+      e.currentTarget.style.borderColor = GOLD;
+      e.currentTarget.style.background = `${CARD}E0`;
+    },
+    onMouseOut: e => {
+      e.currentTarget.style.borderColor = BORDER;
+      e.currentTarget.style.background = CARD;
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 30,
+      marginBottom: 8
+    }
+  }, r.icon), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 14,
+      fontWeight: 600
+    }
+  }, r.label))))), role === "instructor" && /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("button", {
+    onClick: () => setRole(null),
+    style: {
+      background: "none",
+      border: "none",
+      color: DIM,
+      cursor: "pointer",
+      marginBottom: 18,
+      fontSize: 12
+    }
+  }, "\u2190 Terug"), /*#__PURE__*/React.createElement("label", {
+    style: {
+      fontSize: 12,
+      color: DIM,
+      letterSpacing: "1px",
+      textTransform: "uppercase",
+      display: "block",
+      marginBottom: 6
+    }
+  }, "Wachtwoord"), /*#__PURE__*/React.createElement("input", {
+    type: "password",
+    value: pass,
+    onChange: e => setPass(e.target.value),
+    onKeyDown: e => e.key === "Enter" && onLogin(),
+    placeholder: "Voer wachtwoord in...",
+    style: {
+      ...inp,
+      marginBottom: 4
+    }
+  }), /*#__PURE__*/React.createElement("p", {
+    style: {
+      fontSize: 11,
+      color: GOLD_D,
+      marginBottom: 16
+    }
+  }, "Demo: captain123"), err && /*#__PURE__*/React.createElement("p", {
+    style: {
+      color: RED,
+      fontSize: 13,
+      marginBottom: 12
+    }
+  }, err), /*#__PURE__*/React.createElement(Btn, {
+    onClick: onLogin,
+    full: true,
+    size: "lg"
+  }, "Inloggen als Instructeur \uD83C\uDF93")), role === "student" && /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("button", {
+    onClick: () => setRole(null),
+    style: {
+      background: "none",
+      border: "none",
+      color: DIM,
+      cursor: "pointer",
+      marginBottom: 18,
+      fontSize: 12
+    }
+  }, "\u2190 Terug"), /*#__PURE__*/React.createElement("label", {
+    style: {
+      fontSize: 12,
+      color: DIM,
+      letterSpacing: "1px",
+      textTransform: "uppercase",
+      display: "block",
+      marginBottom: 6
+    }
+  }, "Jouw naam"), /*#__PURE__*/React.createElement("select", {
+    value: sid,
+    onChange: e => setSid(e.target.value),
+    style: {
+      ...inp,
+      marginBottom: 12,
+      cursor: "pointer"
+    }
+  }, /*#__PURE__*/React.createElement("option", {
+    value: ""
+  }, "\u2014 Selecteer student \u2014"), students.map(s => /*#__PURE__*/React.createElement("option", {
+    key: s.id,
+    value: s.id
+  }, s.name))), /*#__PURE__*/React.createElement("label", {
+    style: {
+      fontSize: 12,
+      color: DIM,
+      letterSpacing: "1px",
+      textTransform: "uppercase",
+      display: "block",
+      marginBottom: 6
+    }
+  }, "Wachtwoord"), /*#__PURE__*/React.createElement("input", {
+    type: "password",
+    value: pass,
+    onChange: e => setPass(e.target.value),
+    onKeyDown: e => e.key === "Enter" && onLogin(),
+    placeholder: "Voer wachtwoord in...",
+    style: {
+      ...inp,
+      marginBottom: 4
+    }
+  }), /*#__PURE__*/React.createElement("p", {
+    style: {
+      fontSize: 11,
+      color: GOLD_D,
+      marginBottom: 16
+    }
+  }, "Demo: marco / sophie / ravi"), err && /*#__PURE__*/React.createElement("p", {
+    style: {
+      color: RED,
+      fontSize: 13,
+      marginBottom: 12
+    }
+  }, err), /*#__PURE__*/React.createElement(Btn, {
+    onClick: onLogin,
+    full: true,
+    size: "lg"
+  }, "Inloggen als Student \u26F5"))));
+}
+
+// ── INSTRUCTOR HOME ───────────────────────────────────────────────────────────
+function InstructorHome({
+  students,
+  onSelect,
+  onLogout,
+  onAdd
+}) {
+  const st = students.map(s => ({
+    ...s,
+    st: status(s)
+  }));
+  const counts = {
+    green: st.filter(s => s.st === "green").length,
+    orange: st.filter(s => s.st === "orange").length,
+    red: st.filter(s => s.st === "red").length
+  };
+  return /*#__PURE__*/React.createElement("div", {
+    style: {
+      minHeight: "100vh",
+      background: BG,
+      fontFamily: "'Outfit',sans-serif"
+    }
+  }, /*#__PURE__*/React.createElement(NavBar, {
+    title: "Bon Vibe Captain",
+    onLogout: onLogout
+  }), /*#__PURE__*/React.createElement("div", {
+    style: {
+      maxWidth: 900,
+      margin: "0 auto",
+      padding: "28px 20px"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "grid",
+      gridTemplateColumns: "repeat(3,1fr)",
+      gap: 12,
+      marginBottom: 28
+    }
+  }, [{
+    label: "Examen klaar",
+    count: counts.green,
+    c: GREEN
+  }, {
+    label: "Bijna klaar",
+    count: counts.orange,
+    c: ORANGE
+  }, {
+    label: "Nog niet klaar",
+    count: counts.red,
+    c: RED
+  }].map(x => /*#__PURE__*/React.createElement("div", {
+    key: x.label,
+    style: {
+      background: SURFACE,
+      border: `1px solid ${BORDER}`,
+      borderRadius: 12,
+      padding: "18px 20px",
+      position: "relative",
+      overflow: "hidden"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      position: "absolute",
+      top: 0,
+      left: 0,
+      right: 0,
+      height: 2,
+      background: x.c
+    }
+  }), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 32,
+      fontWeight: 700,
+      color: x.c,
+      fontFamily: "'Cormorant Garamond',serif"
+    }
+  }, x.count), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 12,
+      color: DIM,
+      marginTop: 2
+    }
+  }, x.label)))), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "space-between",
+      marginBottom: 18
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontFamily: "'Cormorant Garamond',serif",
+      fontSize: 22,
+      color: CREAM
+    }
+  }, "Mijn Studenten ", /*#__PURE__*/React.createElement("span", {
+    style: {
+      color: DIM,
+      fontSize: 16
+    }
+  }, "(", students.length, ")")), /*#__PURE__*/React.createElement(Btn, {
+    onClick: onAdd,
+    size: "sm"
+  }, "+ Nieuwe student")), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "grid",
+      gridTemplateColumns: "repeat(auto-fill,minmax(260px,1fr))",
+      gap: 14
+    }
+  }, students.map(s => {
+    const st = status(s);
+    const sc = STATUS[st];
+    const avg = avgAll(s.scores);
+    return /*#__PURE__*/React.createElement("button", {
+      key: s.id,
+      onClick: () => onSelect(s),
+      style: {
+        background: CARD,
+        border: `1px solid ${BORDER}`,
+        borderRadius: 14,
+        padding: 0,
+        cursor: "pointer",
+        textAlign: "left",
+        transition: "all 0.2s",
+        overflow: "hidden",
+        outline: "none",
+        display: "block",
+        width: "100%"
       },
-      set: (key, value) => {
-        try { localStorage.setItem(key, value); return { value }; }
-        catch { return null; }
+      onMouseOver: e => {
+        e.currentTarget.style.borderColor = GOLD;
+        e.currentTarget.style.transform = "translateY(-2px)";
+      },
+      onMouseOut: e => {
+        e.currentTarget.style.borderColor = BORDER;
+        e.currentTarget.style.transform = "translateY(0)";
       }
-    };
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        height: 3,
+        background: sc.c
+      }
+    }), /*#__PURE__*/React.createElement("div", {
+      style: {
+        padding: "18px 20px"
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "flex-start",
+        marginBottom: 10
+      }
+    }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontSize: 16,
+        fontWeight: 600,
+        color: TEXT,
+        marginBottom: 2
+      }
+    }, s.name), /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontSize: 11,
+        color: DIM
+      }
+    }, s.praktijkUren, " uur praktijk")), /*#__PURE__*/React.createElement("div", {
+      style: {
+        background: sc.bg,
+        border: `1px solid ${sc.c}40`,
+        borderRadius: 6,
+        padding: "3px 8px",
+        fontSize: 11,
+        color: sc.c,
+        fontWeight: 600,
+        whiteSpace: "nowrap"
+      }
+    }, sc.icon, " ", sc.label)), /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: "flex",
+        gap: 8,
+        alignItems: "center",
+        marginBottom: 8
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontSize: 12,
+        color: DIM
+      }
+    }, "Gem. score"), /*#__PURE__*/React.createElement("div", {
+      style: {
+        flex: 1,
+        height: 4,
+        background: BORDER,
+        borderRadius: 2,
+        overflow: "hidden"
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        height: "100%",
+        width: `${avg * 10}%`,
+        background: sColor(Math.round(avg)),
+        borderRadius: 2
+      }
+    })), /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontSize: 13,
+        fontWeight: 700,
+        color: sColor(Math.round(avg))
+      }
+    }, avg.toFixed(1))), /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: "flex",
+        gap: 12,
+        fontSize: 11,
+        color: DIM
+      }
+    }, /*#__PURE__*/React.createElement("span", null, s.theorie ? "✅ Theorie" : "❌ Theorie"), s.examDatum && /*#__PURE__*/React.createElement("span", null, "\uD83D\uDCC5 ", s.examDatum))));
+  }))));
+}
 
-    // ── PALETTE ───────────────────────────────────────────────────────────────
-    const BG      = "#060F1A";
-    const SURFACE = "#0C1D2E";
-    const CARD    = "#102236";
-    const BORDER  = "#1A3452";
-    const GOLD    = "#C8A84A";
-    const GOLD_L  = "#E2C270";
-    const GOLD_D  = "#7A6130";
-    const CREAM   = "#EDE0C4";
-    const TEXT    = "#DDD5C0";
-    const DIM     = "#5E7A90";
-    const RED     = "#D94040";
-    const ORANGE  = "#D97706";
-    const GREEN   = "#22C48A";
-
-    // ── DATA ──────────────────────────────────────────────────────────────────
-    const CATS = [
-      { id:"docking",    emoji:"⚓", label:"Docking",    skills:["Aanleggen bakboord","Aanleggen stuurboord","Achteruit bakboord","Achteruit stuurboord"] },
-      { id:"manoeuvres", emoji:"🔄", label:"Manoeuvres", skills:["Turning point","Box parking","Invaren box","Uitvaren box"] },
-      { id:"wind",       emoji:"💨", label:"Wind",        skills:["Tegenwind","Wind in de rug"] },
-      { id:"veiligheid", emoji:"🛡️", label:"Veiligheid",  skills:["Veilig varen","Spiegel gebruik","Gascontrole","Rust & controle"] },
-    ];
-    const ALL_SKILLS = CATS.flatMap(c => c.skills);
-
-    const SEED = [
-      { id:1, name:"Marco de Vries", phone:"06-12345678", email:"marco@email.nl",
-        theorie:true, praktijkUren:14, examDatum:"2026-06-15", password:"marco",
-        scores:{
-          "Aanleggen bakboord":[7,8,9], "Aanleggen stuurboord":[6,7,8],
-          "Achteruit bakboord":[5,7,8], "Achteruit stuurboord":[4,6,8],
-          "Turning point":[8,9],        "Box parking":[7,8],
-          "Invaren box":[6,8],          "Uitvaren box":[7,8],
-          "Tegenwind":[6,8],            "Wind in de rug":[7,9],
-          "Veilig varen":[8,9,10],      "Spiegel gebruik":[7,8,9],
-          "Gascontrole":[8,9],          "Rust & controle":[7,8,9],
-        },
-        notes:[{date:"02-05-2026", text:"Uitstekende les! Marco toont veel verbetering."}] },
-      { id:2, name:"Sophie Jansen", phone:"06-87654321", email:"sophie@email.nl",
-        theorie:true, praktijkUren:8, examDatum:null, password:"sophie",
-        scores:{
-          "Aanleggen bakboord":[5,7], "Aanleggen stuurboord":[4,6],
-          "Achteruit bakboord":[3,5], "Achteruit stuurboord":[3,5],
-          "Turning point":[6,7],      "Box parking":[5,6],
-          "Invaren box":[4,6],        "Uitvaren box":[5,6],
-          "Tegenwind":[4,6],          "Wind in de rug":[5,7],
-          "Veilig varen":[6,7],       "Spiegel gebruik":[5,7],
-          "Gascontrole":[6,7],        "Rust & controle":[5,7],
-        },
-        notes:[] },
-      { id:3, name:"Ravi Sharma", phone:"06-11223344", email:"ravi@email.nl",
-        theorie:false, praktijkUren:4, examDatum:null, password:"ravi",
-        scores:{
-          "Aanleggen bakboord":[3,4], "Aanleggen stuurboord":[2,4],
-          "Achteruit bakboord":[2,3], "Achteruit stuurboord":[2,3],
-          "Turning point":[4,5],      "Box parking":[3],
-          "Invaren box":[3,4],        "Uitvaren box":[3],
-          "Tegenwind":[3,4],          "Wind in de rug":[3,4],
-          "Veilig varen":[4,5],       "Spiegel gebruik":[3,4],
-          "Gascontrole":[4,5],        "Rust & controle":[3,4],
-        },
-        notes:[] },
-    ];
-
-    // ── HELPERS ───────────────────────────────────────────────────────────────
-    const latest  = (sc, skill) => { const a=sc[skill]||[]; return a.length ? a[a.length-1] : null; };
-    const avgAll  = (sc) => { const v=ALL_SKILLS.map(s=>latest(sc,s)).filter(x=>x!==null); return v.length ? (v.reduce((a,b)=>a+b,0)/v.length) : 0; };
-    const status  = (s) => { const l=ALL_SKILLS.map(sk=>latest(s.scores,sk)); if(l.some(v=>v===null))return"red"; if(l.every(v=>v>=8))return"green"; return avgAll(s.scores)>=5.5?"orange":"red"; };
-    const sColor  = (v) => { if(v===null)return DIM; if(v>=9)return"#4ADE80"; if(v>=8)return GREEN; if(v>=7)return"#86EFAC"; if(v>=4)return ORANGE; return RED; };
-    const STATUS  = { green:{c:GREEN,bg:"rgba(34,196,138,0.12)",label:"Examen klaar",icon:"✅"}, orange:{c:ORANGE,bg:"rgba(217,119,6,0.12)",label:"Bijna klaar",icon:"🟠"}, red:{c:RED,bg:"rgba(207,68,68,0.12)",label:"Nog niet klaar",icon:"🔴"} };
-
-    // ── MICRO COMPONENTS ──────────────────────────────────────────────────────
-    const inp = { width:"100%", padding:"11px 14px", background:CARD, border:`1px solid ${BORDER}`, borderRadius:8, color:TEXT, fontSize:14, fontFamily:"'Outfit',sans-serif", outline:"none", boxSizing:"border-box" };
-
-    function Btn({children, onClick, variant="gold", size="md", full, disabled}) {
-      const s = {sm:{px:10,py:6,fs:12}, md:{px:18,py:10,fs:14}, lg:{px:26,py:14,fs:16}}[size];
-      const styles = {
-        gold:    {background:`linear-gradient(135deg,${GOLD},${GOLD_L})`, border:`1px solid ${GOLD_L}`, color:"#0A1A2A"},
-        outline: {background:"transparent", border:`1px solid ${GOLD}`, color:GOLD},
-        ghost:   {background:"transparent", border:`1px solid ${BORDER}`, color:TEXT},
-        danger:  {background:`rgba(217,64,64,0.15)`, border:`1px solid ${RED}`, color:RED},
-      }[variant];
-      return (
-        <button onClick={onClick} disabled={disabled} style={{
-          ...styles, padding:`${s.py}px ${s.px}px`, borderRadius:8,
-          fontFamily:"'Outfit',sans-serif", fontSize:s.fs, fontWeight:600,
-          cursor:disabled?"not-allowed":"pointer", width:full?"100%":"auto",
-          opacity:disabled?0.45:1, letterSpacing:"0.4px", transition:"all 0.18s",
-        }}>{children}</button>
-      );
+// ── ADD STUDENT MODAL ─────────────────────────────────────────────────────────
+function AddStudentModal({
+  newS,
+  setNewS,
+  onSave,
+  onCancel
+}) {
+  return /*#__PURE__*/React.createElement("div", {
+    style: {
+      position: "fixed",
+      inset: 0,
+      background: "rgba(6,15,26,0.85)",
+      zIndex: 200,
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      padding: 20
     }
-
-    function ScoreBar({score}) {
-      return (
-        <div style={{display:"flex", alignItems:"center", gap:8, flex:1, minWidth:0}}>
-          <div style={{flex:1, height:5, background:BORDER, borderRadius:3, overflow:"hidden"}}>
-            <div style={{height:"100%", width:`${(score||0)*10}%`, background:sColor(score), borderRadius:3, transition:"width 0.5s ease"}} />
-          </div>
-          <span style={{fontSize:13, fontWeight:700, color:sColor(score), minWidth:18, textAlign:"right"}}>{score??"-"}</span>
-        </div>
-      );
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: SURFACE,
+      border: `1px solid ${BORDER}`,
+      borderRadius: 16,
+      padding: 32,
+      width: "100%",
+      maxWidth: 400,
+      boxShadow: `0 30px 60px rgba(0,0,0,0.5)`
     }
-
-    function MiniBar({scores}) {
-      return (
-        <div style={{display:"flex", gap:2, alignItems:"flex-end", height:20}}>
-          {(scores||[]).slice(-6).map((s,i)=>(
-            <div key={i} style={{width:6, minHeight:2, height:`${s*10}%`, background:sColor(s), borderRadius:2, opacity:0.5+(i/Math.max((scores.length-1),1))*0.5}} />
-          ))}
-        </div>
-      );
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontFamily: "'Cormorant Garamond',serif",
+      fontSize: 20,
+      color: GOLD,
+      marginBottom: 24
     }
-
-    function NavBar({title, onBack, onLogout, backLabel="← Terug"}) {
-      return (
-        <div style={{background:SURFACE, borderBottom:`1px solid ${BORDER}`, padding:"0 20px", height:60, display:"flex", alignItems:"center", justifyContent:"space-between", position:"sticky", top:0, zIndex:100}}>
-          <div style={{display:"flex", alignItems:"center", gap:12}}>
-            {onBack && <button onClick={onBack} style={{background:"none", border:`1px solid ${BORDER}`, color:GOLD, padding:"5px 12px", borderRadius:6, cursor:"pointer", fontSize:13, fontFamily:"'Outfit',sans-serif"}}>{backLabel}</button>}
-            {!onBack && <span style={{fontSize:20}}>⚓</span>}
-            <span style={{fontFamily:"'Cormorant Garamond',serif", fontSize:18, fontWeight:700, color:GOLD}}>{title}</span>
-          </div>
-          {onLogout && <button onClick={onLogout} style={{background:"none", border:`1px solid ${BORDER}`, color:DIM, padding:"5px 12px", borderRadius:6, cursor:"pointer", fontSize:12, fontFamily:"'Outfit',sans-serif"}}>Uitloggen</button>}
-        </div>
-      );
+  }, "Nieuwe Student"), [{
+    k: "name",
+    l: "Naam",
+    p: "Marco de Vries"
+  }, {
+    k: "phone",
+    l: "Telefoon",
+    p: "06-12345678"
+  }, {
+    k: "email",
+    l: "Email",
+    p: "naam@email.nl"
+  }, {
+    k: "password",
+    l: "Wachtwoord",
+    p: "Kies een wachtwoord",
+    t: "text"
+  }].map(f => /*#__PURE__*/React.createElement("div", {
+    key: f.k,
+    style: {
+      marginBottom: 14
     }
-
-    // ── LOGIN ─────────────────────────────────────────────────────────────────
-    function LoginScreen({role, setRole, pass, setPass, sid, setSid, err, onLogin, students}) {
-      return (
-        <div style={{minHeight:"100vh", background:`radial-gradient(ellipse at 25% 25%, #0E2B44 0%, ${BG} 65%)`, display:"flex", alignItems:"center", justifyContent:"center", padding:20, fontFamily:"'Outfit',sans-serif", position:"relative", overflow:"hidden"}}>
-          <div style={{position:"fixed", inset:0, pointerEvents:"none", backgroundImage:`linear-gradient(${BORDER}28 1px,transparent 1px),linear-gradient(90deg,${BORDER}28 1px,transparent 1px)`, backgroundSize:"56px 56px"}} />
-          <div style={{position:"fixed", inset:0, pointerEvents:"none", background:"radial-gradient(ellipse at 70% 80%, #0B2E4820 0%, transparent 60%)"}} />
-          <div style={{background:SURFACE, border:`1px solid ${BORDER}`, borderRadius:20, padding:"48px 40px", width:"100%", maxWidth:400, position:"relative", boxShadow:`0 40px 80px rgba(0,0,0,0.55), 0 0 0 1px ${GOLD}18`, zIndex:1}}>
-            <div style={{position:"absolute", top:0, left:48, right:48, height:2, background:`linear-gradient(90deg,transparent,${GOLD},transparent)`, borderRadius:"0 0 4px 4px"}} />
-            <div style={{textAlign:"center", marginBottom:36}}>
-              <div style={{fontSize:44, marginBottom:10, filter:`drop-shadow(0 0 16px ${GOLD}50)`}}>⚓</div>
-              <div style={{fontFamily:"'Cormorant Garamond',serif", fontSize:26, fontWeight:700, color:GOLD, letterSpacing:"2.5px", textTransform:"uppercase"}}>Bon Vibe Captain</div>
-              <div style={{fontSize:11, color:DIM, letterSpacing:"3.5px", marginTop:6, textTransform:"uppercase"}}>Vaarbewijs Systeem</div>
-            </div>
-
-            {!role && (
-              <div>
-                <p style={{textAlign:"center", color:DIM, fontSize:13, marginBottom:18, letterSpacing:"1px", textTransform:"uppercase"}}>Wie ben jij?</p>
-                <div style={{display:"grid", gridTemplateColumns:"1fr 1fr", gap:12}}>
-                  {[{k:"instructor", label:"Instructeur", icon:"🎓"},{k:"student", label:"Student", icon:"⛵"}].map(r=>(
-                    <button key={r.k} onClick={()=>setRole(r.k)} style={{padding:"22px 16px", background:CARD, border:`1px solid ${BORDER}`, borderRadius:12, cursor:"pointer", color:TEXT, fontFamily:"'Outfit',sans-serif", transition:"all 0.2s"}}
-                      onMouseOver={e=>{e.currentTarget.style.borderColor=GOLD; e.currentTarget.style.background=`${CARD}E0`;}}
-                      onMouseOut={e=>{e.currentTarget.style.borderColor=BORDER; e.currentTarget.style.background=CARD;}}>
-                      <div style={{fontSize:30, marginBottom:8}}>{r.icon}</div>
-                      <div style={{fontSize:14, fontWeight:600}}>{r.label}</div>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {role==="instructor" && (
-              <div>
-                <button onClick={()=>setRole(null)} style={{background:"none",border:"none",color:DIM,cursor:"pointer",marginBottom:18,fontSize:12}}>← Terug</button>
-                <label style={{fontSize:12, color:DIM, letterSpacing:"1px", textTransform:"uppercase", display:"block", marginBottom:6}}>Wachtwoord</label>
-                <input type="password" value={pass} onChange={e=>setPass(e.target.value)} onKeyDown={e=>e.key==="Enter"&&onLogin()}
-                  placeholder="Voer wachtwoord in..." style={{...inp, marginBottom:4}} />
-                <p style={{fontSize:11, color:GOLD_D, marginBottom:16}}>Demo: captain123</p>
-                {err && <p style={{color:RED, fontSize:13, marginBottom:12}}>{err}</p>}
-                <Btn onClick={onLogin} full size="lg">Inloggen als Instructeur 🎓</Btn>
-              </div>
-            )}
-
-            {role==="student" && (
-              <div>
-                <button onClick={()=>setRole(null)} style={{background:"none",border:"none",color:DIM,cursor:"pointer",marginBottom:18,fontSize:12}}>← Terug</button>
-                <label style={{fontSize:12, color:DIM, letterSpacing:"1px", textTransform:"uppercase", display:"block", marginBottom:6}}>Jouw naam</label>
-                <select value={sid} onChange={e=>setSid(e.target.value)} style={{...inp, marginBottom:12, cursor:"pointer"}}>
-                  <option value="">— Selecteer student —</option>
-                  {students.map(s=><option key={s.id} value={s.id}>{s.name}</option>)}
-                </select>
-                <label style={{fontSize:12, color:DIM, letterSpacing:"1px", textTransform:"uppercase", display:"block", marginBottom:6}}>Wachtwoord</label>
-                <input type="password" value={pass} onChange={e=>setPass(e.target.value)} onKeyDown={e=>e.key==="Enter"&&onLogin()}
-                  placeholder="Voer wachtwoord in..." style={{...inp, marginBottom:4}} />
-                <p style={{fontSize:11, color:GOLD_D, marginBottom:16}}>Demo: marco / sophie / ravi</p>
-                {err && <p style={{color:RED, fontSize:13, marginBottom:12}}>{err}</p>}
-                <Btn onClick={onLogin} full size="lg">Inloggen als Student ⛵</Btn>
-              </div>
-            )}
-          </div>
-        </div>
-      );
+  }, /*#__PURE__*/React.createElement("label", {
+    style: {
+      fontSize: 12,
+      color: DIM,
+      display: "block",
+      marginBottom: 5,
+      textTransform: "uppercase",
+      letterSpacing: "0.8px"
     }
-
-    // ── INSTRUCTOR HOME ───────────────────────────────────────────────────────
-    function InstructorHome({students, onSelect, onLogout, onAdd}) {
-      const st = students.map(s=>({...s, st:status(s)}));
-      const counts = { green: st.filter(s=>s.st==="green").length, orange: st.filter(s=>s.st==="orange").length, red: st.filter(s=>s.st==="red").length };
-
-      return (
-        <div style={{minHeight:"100vh", background:BG, fontFamily:"'Outfit',sans-serif"}}>
-          <NavBar title="Bon Vibe Captain" onLogout={onLogout} />
-          <div style={{maxWidth:900, margin:"0 auto", padding:"28px 20px"}}>
-            <div style={{display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:12, marginBottom:28}}>
-              {[{label:"Examen klaar", count:counts.green, c:GREEN}, {label:"Bijna klaar", count:counts.orange, c:ORANGE}, {label:"Nog niet klaar", count:counts.red, c:RED}].map(x=>(
-                <div key={x.label} style={{background:SURFACE, border:`1px solid ${BORDER}`, borderRadius:12, padding:"18px 20px", position:"relative", overflow:"hidden"}}>
-                  <div style={{position:"absolute", top:0, left:0, right:0, height:2, background:x.c}} />
-                  <div style={{fontSize:32, fontWeight:700, color:x.c, fontFamily:"'Cormorant Garamond',serif"}}>{x.count}</div>
-                  <div style={{fontSize:12, color:DIM, marginTop:2}}>{x.label}</div>
-                </div>
-              ))}
-            </div>
-
-            <div style={{display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:18}}>
-              <div style={{fontFamily:"'Cormorant Garamond',serif", fontSize:22, color:CREAM}}>Mijn Studenten <span style={{color:DIM, fontSize:16}}>({students.length})</span></div>
-              <Btn onClick={onAdd} size="sm">+ Nieuwe student</Btn>
-            </div>
-
-            <div style={{display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(260px,1fr))", gap:14}}>
-              {students.map(s => {
-                const st = status(s);
-                const sc = STATUS[st];
-                const avg = avgAll(s.scores);
-                return (
-                  <button key={s.id} onClick={()=>onSelect(s)} style={{
-                    background:CARD, border:`1px solid ${BORDER}`, borderRadius:14, padding:0,
-                    cursor:"pointer", textAlign:"left", transition:"all 0.2s", overflow:"hidden",
-                    outline:"none", display:"block", width:"100%",
-                  }}
-                    onMouseOver={e=>{e.currentTarget.style.borderColor=GOLD; e.currentTarget.style.transform="translateY(-2px)";}}
-                    onMouseOut={e=>{e.currentTarget.style.borderColor=BORDER; e.currentTarget.style.transform="translateY(0)";}}>
-                    <div style={{height:3, background:sc.c}} />
-                    <div style={{padding:"18px 20px"}}>
-                      <div style={{display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:10}}>
-                        <div>
-                          <div style={{fontSize:16, fontWeight:600, color:TEXT, marginBottom:2}}>{s.name}</div>
-                          <div style={{fontSize:11, color:DIM}}>{s.praktijkUren} uur praktijk</div>
-                        </div>
-                        <div style={{background:sc.bg, border:`1px solid ${sc.c}40`, borderRadius:6, padding:"3px 8px", fontSize:11, color:sc.c, fontWeight:600, whiteSpace:"nowrap"}}>
-                          {sc.icon} {sc.label}
-                        </div>
-                      </div>
-                      <div style={{display:"flex", gap:8, alignItems:"center", marginBottom:8}}>
-                        <div style={{fontSize:12, color:DIM}}>Gem. score</div>
-                        <div style={{flex:1, height:4, background:BORDER, borderRadius:2, overflow:"hidden"}}>
-                          <div style={{height:"100%", width:`${avg*10}%`, background:sColor(Math.round(avg)), borderRadius:2}} />
-                        </div>
-                        <div style={{fontSize:13, fontWeight:700, color:sColor(Math.round(avg))}}>{avg.toFixed(1)}</div>
-                      </div>
-                      <div style={{display:"flex", gap:12, fontSize:11, color:DIM}}>
-                        <span>{s.theorie ? "✅ Theorie" : "❌ Theorie"}</span>
-                        {s.examDatum && <span>📅 {s.examDatum}</span>}
-                      </div>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-      );
+  }, f.l), /*#__PURE__*/React.createElement("input", {
+    type: f.t || "text",
+    value: newS[f.k],
+    onChange: e => setNewS({
+      ...newS,
+      [f.k]: e.target.value
+    }),
+    placeholder: f.p,
+    style: inp
+  }))), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      gap: 10,
+      marginTop: 24
     }
+  }, /*#__PURE__*/React.createElement(Btn, {
+    onClick: onCancel,
+    variant: "ghost",
+    full: true
+  }, "Annuleren"), /*#__PURE__*/React.createElement(Btn, {
+    onClick: onSave,
+    full: true,
+    disabled: !newS.name || !newS.password
+  }, "Student toevoegen"))));
+}
 
-    // ── ADD STUDENT MODAL ─────────────────────────────────────────────────────
-    function AddStudentModal({newS, setNewS, onSave, onCancel}) {
-      return (
-        <div style={{position:"fixed", inset:0, background:"rgba(6,15,26,0.85)", zIndex:200, display:"flex", alignItems:"center", justifyContent:"center", padding:20}}>
-          <div style={{background:SURFACE, border:`1px solid ${BORDER}`, borderRadius:16, padding:32, width:"100%", maxWidth:400, boxShadow:`0 30px 60px rgba(0,0,0,0.5)`}}>
-            <div style={{fontFamily:"'Cormorant Garamond',serif", fontSize:20, color:GOLD, marginBottom:24}}>Nieuwe Student</div>
-            {[{k:"name",l:"Naam",p:"Marco de Vries"},{k:"phone",l:"Telefoon",p:"06-12345678"},{k:"email",l:"Email",p:"naam@email.nl"},{k:"password",l:"Wachtwoord",p:"Kies een wachtwoord",t:"text"}].map(f=>(
-              <div key={f.k} style={{marginBottom:14}}>
-                <label style={{fontSize:12, color:DIM, display:"block", marginBottom:5, textTransform:"uppercase", letterSpacing:"0.8px"}}>{f.l}</label>
-                <input type={f.t||"text"} value={newS[f.k]} onChange={e=>setNewS({...newS,[f.k]:e.target.value})} placeholder={f.p} style={inp} />
-              </div>
-            ))}
-            <div style={{display:"flex", gap:10, marginTop:24}}>
-              <Btn onClick={onCancel} variant="ghost" full>Annuleren</Btn>
-              <Btn onClick={onSave} full disabled={!newS.name||!newS.password}>Student toevoegen</Btn>
-            </div>
-          </div>
-        </div>
-      );
+// ── STUDENT DETAIL (instructor view) ─────────────────────────────────────────
+function StudentDetail({
+  student,
+  onBack,
+  onAddLesson,
+  onToggleTheorie,
+  onUpdateExamDate,
+  students,
+  onSave
+}) {
+  const [tab, setTab] = useState(0);
+  const [editDate, setEditDate] = useState(false);
+  const [dateVal, setDateVal] = useState(student.examDatum || "");
+  const st = status(student);
+  const sc = STATUS[st];
+  useEffect(() => {
+    const fresh = students.find(s => s.id === student.id);
+    if (fresh) setDateVal(fresh.examDatum || "");
+  }, [students, student.id]);
+  const fresh = students.find(s => s.id === student.id) || student;
+  const cat = CATS[tab];
+  return /*#__PURE__*/React.createElement("div", {
+    style: {
+      minHeight: "100vh",
+      background: BG,
+      fontFamily: "'Outfit',sans-serif"
     }
-
-    // ── STUDENT DETAIL (instructor view) ──────────────────────────────────────
-    function StudentDetail({student, onBack, onAddLesson, onToggleTheorie, onUpdateExamDate, students}) {
-      const [tab, setTab] = useState(0);
-      const [editDate, setEditDate] = useState(false);
-      const [dateVal, setDateVal] = useState(student.examDatum||"");
-
-      useEffect(() => {
-        const fresh = students.find(s=>s.id===student.id);
-        if(fresh) setDateVal(fresh.examDatum||"");
-      }, [students, student.id]);
-
-      const fresh = students.find(s=>s.id===student.id) || student;
-      const st = status(fresh);
-      const sc = STATUS[st];
-      const cat = CATS[tab];
-
-      return (
-        <div style={{minHeight:"100vh", background:BG, fontFamily:"'Outfit',sans-serif"}}>
-          <NavBar title={fresh.name} onBack={onBack} />
-          <div style={{maxWidth:800, margin:"0 auto", padding:"24px 20px"}}>
-            <div style={{background:SURFACE, border:`1px solid ${BORDER}`, borderRadius:14, padding:24, marginBottom:20, position:"relative", overflow:"hidden"}}>
-              <div style={{position:"absolute", top:0, left:0, right:0, height:3, background:sc.c}} />
-              <div style={{display:"flex", flexWrap:"wrap", gap:16, alignItems:"flex-start", justifyContent:"space-between"}}>
-                <div>
-                  <div style={{fontFamily:"'Cormorant Garamond',serif", fontSize:24, color:CREAM}}>{fresh.name}</div>
-                  <div style={{fontSize:13, color:DIM, marginTop:3}}>{fresh.email} · {fresh.phone}</div>
-                  <div style={{display:"flex", gap:16, marginTop:12, flexWrap:"wrap"}}>
-                    <div style={{background:sc.bg, border:`1px solid ${sc.c}40`, borderRadius:8, padding:"6px 14px", fontSize:13, color:sc.c, fontWeight:600}}>{sc.icon} {sc.label}</div>
-                    <div style={{background:CARD, border:`1px solid ${BORDER}`, borderRadius:8, padding:"6px 14px", fontSize:13, color:TEXT}}>⏱ {fresh.praktijkUren} uren praktijk</div>
-                    <div style={{background:fresh.theorie?`rgba(34,196,138,0.12)`:CARD, border:`1px solid ${fresh.theorie?GREEN:BORDER}`, borderRadius:8, padding:"6px 14px", fontSize:13, color:fresh.theorie?GREEN:DIM, cursor:"pointer"}}
-                      onClick={onToggleTheorie}>{fresh.theorie?"✅ Theorie behaald":"❌ Theorie nog niet"}</div>
-                  </div>
-                </div>
-                <div style={{display:"flex", gap:8, flexWrap:"wrap"}}>
-                  {!editDate ? (
-                    <button onClick={()=>setEditDate(true)} style={{background:CARD, border:`1px solid ${BORDER}`, color:DIM, padding:"7px 14px", borderRadius:8, cursor:"pointer", fontSize:12, fontFamily:"'Outfit',sans-serif"}}>
-                      {fresh.examDatum ? `📅 ${fresh.examDatum}` : "📅 Examen datum"}
-                    </button>
-                  ) : (
-                    <div style={{display:"flex", gap:6, alignItems:"center"}}>
-                      <input type="date" value={dateVal} onChange={e=>setDateVal(e.target.value)} style={{...inp, width:"auto", fontSize:12, padding:"6px 10px"}} />
-                      <Btn size="sm" onClick={()=>{onUpdateExamDate(dateVal); setEditDate(false);}}>Opslaan</Btn>
-                      <Btn size="sm" variant="ghost" onClick={()=>setEditDate(false)}>✕</Btn>
-                    </div>
-                  )}
-                  <Btn onClick={onAddLesson} size="sm">+ Les toevoegen</Btn>
-                </div>
-              </div>
-            </div>
-
-            <div style={{display:"flex", gap:8, marginBottom:16, overflowX:"auto", paddingBottom:4}}>
-              {CATS.map((c,i)=>{
-                const catLatests = c.skills.map(s=>latest(fresh.scores,s)).filter(v=>v!==null);
-                const catReady = catLatests.length===c.skills.length && catLatests.every(v=>v>=8);
-                return (
-                  <button key={c.id} onClick={()=>setTab(i)} style={{
-                    padding:"8px 16px", borderRadius:8, cursor:"pointer", whiteSpace:"nowrap",
-                    background:tab===i?`${GOLD}18`:CARD, border:`1px solid ${tab===i?GOLD:BORDER}`,
-                    color:tab===i?GOLD:DIM, fontFamily:"'Outfit',sans-serif", fontSize:13, fontWeight:tab===i?600:400,
-                  }}>
-                    {c.emoji} {c.label}
-                    {catReady && <span style={{color:GREEN, marginLeft:4}}>✓</span>}
-                  </button>
-                );
-              })}
-            </div>
-
-            <div style={{background:SURFACE, border:`1px solid ${BORDER}`, borderRadius:14, overflow:"hidden", marginBottom:20}}>
-              <div style={{padding:"16px 20px", borderBottom:`1px solid ${BORDER}`, display:"flex", alignItems:"center", gap:8}}>
-                <span style={{fontSize:20}}>{cat.emoji}</span>
-                <span style={{fontFamily:"'Cormorant Garamond',serif", fontSize:18, color:CREAM}}>{cat.label}</span>
-              </div>
-              {cat.skills.map(skill => {
-                const scores = fresh.scores[skill]||[];
-                const last = scores.length ? scores[scores.length-1] : null;
-                const ready = last!==null && last>=8;
-                return (
-                  <div key={skill} style={{padding:"14px 20px", borderBottom:`1px solid ${BORDER}18`, display:"flex", alignItems:"center", gap:12}}>
-                    <div style={{minWidth:170, fontSize:14, color:ready?TEXT:last&&last>=6?TEXT:DIM}}>{skill}</div>
-                    <MiniBar scores={scores} />
-                    <ScoreBar score={last} />
-                    <div style={{minWidth:80, fontSize:11, color:ready?GREEN:last&&last>=6?ORANGE:last?RED:DIM, textAlign:"right"}}>
-                      {last===null?"–":last>=8?"✓ Klaar":last>=6?"Oefenen":"Hulp nodig"}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            {(fresh.notes||[]).length>0 && (
-              <div style={{background:SURFACE, border:`1px solid ${BORDER}`, borderRadius:14, padding:20}}>
-                <div style={{fontFamily:"'Cormorant Garamond',serif", fontSize:18, color:CREAM, marginBottom:14}}>📝 Notities</div>
-                {fresh.notes.map((n,i)=>(
-                  <div key={i} style={{borderLeft:`2px solid ${GOLD_D}`, paddingLeft:14, marginBottom:10}}>
-                    <div style={{fontSize:11, color:DIM, marginBottom:3}}>{n.date}</div>
-                    <div style={{fontSize:14, color:TEXT}}>{n.text}</div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-      );
+  }, /*#__PURE__*/React.createElement(NavBar, {
+    title: fresh.name,
+    onBack: onBack,
+    onLogout: null
+  }), /*#__PURE__*/React.createElement("div", {
+    style: {
+      maxWidth: 800,
+      margin: "0 auto",
+      padding: "24px 20px"
     }
-
-    // ── ADD LESSON PANEL ──────────────────────────────────────────────────────
-    function AddLessonPanel({student, scores, setScores, note, setNote, onSave, onCancel}) {
-      const [tab, setTab] = useState(0);
-      const cat = CATS[tab];
-      const totalSet = Object.keys(scores).length;
-
-      return (
-        <div style={{position:"fixed", inset:0, background:"rgba(6,15,26,0.88)", zIndex:200, display:"flex", flexDirection:"column", justifyContent:"flex-end"}}>
-          <div style={{background:SURFACE, borderTop:`1px solid ${BORDER}`, borderRadius:"20px 20px 0 0", padding:0, maxHeight:"85vh", overflow:"hidden", display:"flex", flexDirection:"column"}}>
-            <div style={{padding:"20px 24px 16px", borderBottom:`1px solid ${BORDER}`, display:"flex", justifyContent:"space-between", alignItems:"center", flexShrink:0}}>
-              <div>
-                <div style={{fontFamily:"'Cormorant Garamond',serif", fontSize:20, color:GOLD}}>Les Toevoegen</div>
-                <div style={{fontSize:12, color:DIM, marginTop:2}}>{student.name} · {totalSet} van {ALL_SKILLS.length} ingevuld</div>
-              </div>
-              <button onClick={onCancel} style={{background:"none", border:`1px solid ${BORDER}`, color:DIM, padding:"5px 12px", borderRadius:6, cursor:"pointer", fontSize:13, fontFamily:"'Outfit',sans-serif"}}>✕ Annuleren</button>
-            </div>
-
-            <div style={{display:"flex", gap:8, padding:"12px 20px", borderBottom:`1px solid ${BORDER}`, overflowX:"auto", flexShrink:0}}>
-              {CATS.map((c,i)=>{
-                const catDone = c.skills.every(s=>scores[s]!==undefined);
-                return (
-                  <button key={c.id} onClick={()=>setTab(i)} style={{padding:"6px 14px", borderRadius:7, cursor:"pointer", whiteSpace:"nowrap", background:tab===i?`${GOLD}18`:CARD, border:`1px solid ${tab===i?GOLD:BORDER}`, color:tab===i?GOLD:DIM, fontFamily:"'Outfit',sans-serif", fontSize:13, fontWeight:tab===i?600:400}}>
-                    {c.emoji} {c.label} {catDone&&<span style={{color:GREEN}}>✓</span>}
-                  </button>
-                );
-              })}
-            </div>
-
-            <div style={{overflowY:"auto", flex:1, padding:"16px 24px"}}>
-              {cat.skills.map(skill=>{
-                const val = scores[skill]??null;
-                return (
-                  <div key={skill} style={{marginBottom:20}}>
-                    <div style={{display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8}}>
-                      <span style={{fontSize:14, color:TEXT}}>{skill}</span>
-                      <span style={{fontSize:20, fontWeight:700, color:sColor(val), minWidth:32, textAlign:"right"}}>{val??"-"}</span>
-                    </div>
-                    <input type="range" min={1} max={10} step={1} value={val??5}
-                      onChange={e=>setScores({...scores,[skill]:parseInt(e.target.value)})}
-                      style={{width:"100%", accentColor:val?sColor(val):DIM, cursor:"pointer"}} />
-                    <div style={{display:"flex", justifyContent:"space-between", marginTop:4}}>
-                      {[1,2,3,4,5,6,7,8,9,10].map(n=>(
-                        <span key={n} style={{fontSize:10, color:val===n?sColor(n):DIM, fontWeight:val===n?700:400}}>{n}</span>
-                      ))}
-                    </div>
-                    <div style={{display:"flex", gap:8, marginTop:8}}>
-                      {[[1,3,"🔴 Hulp"],[4,6,"🟠 Oef."],[7,8,"🟢 Goed"],[9,10,"⭐ Top"]].map(([a,b,l])=>(
-                        <button key={l} onClick={()=>setScores({...scores,[skill]:b})} style={{flex:1, padding:"4px 0", borderRadius:5, background:(val>=a&&val<=b)?`${sColor(b)}20`:CARD, border:`1px solid ${(val>=a&&val<=b)?sColor(b):BORDER}`, color:(val>=a&&val<=b)?sColor(b):DIM, cursor:"pointer", fontSize:11, fontFamily:"'Outfit',sans-serif"}}>{l}</button>
-                      ))}
-                    </div>
-                  </div>
-                );
-              })}
-
-              <div style={{marginTop:8}}>
-                <label style={{fontSize:12, color:DIM, textTransform:"uppercase", letterSpacing:"0.8px", display:"block", marginBottom:6}}>Notitie (optioneel)</label>
-                <textarea value={note} onChange={e=>setNote(e.target.value)} placeholder="Opmerkingen over de les..."
-                  style={{...inp, height:80, resize:"vertical", fontSize:13}} />
-              </div>
-            </div>
-
-            <div style={{padding:"16px 24px", borderTop:`1px solid ${BORDER}`, flexShrink:0}}>
-              <Btn onClick={onSave} full size="lg" disabled={totalSet===0}>💾 Les opslaan ({totalSet} scores)</Btn>
-            </div>
-          </div>
-        </div>
-      );
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: SURFACE,
+      border: `1px solid ${BORDER}`,
+      borderRadius: 14,
+      padding: 24,
+      marginBottom: 20,
+      position: "relative",
+      overflow: "hidden"
     }
-
-    // ── STUDENT VIEW ──────────────────────────────────────────────────────────
-    function StudentView({student, onLogout}) {
-      const [tab, setTab] = useState(null);
-      const st = status(student);
-      const sc = STATUS[st];
-      const avg = avgAll(student.scores);
-      const weakSkills = ALL_SKILLS.filter(s=>{const v=latest(student.scores,s); return v===null||v<8;});
-      const readySkills = ALL_SKILLS.filter(s=>{const v=latest(student.scores,s); return v!==null&&v>=8;});
-
-      return (
-        <div style={{minHeight:"100vh", background:BG, fontFamily:"'Outfit',sans-serif"}}>
-          <NavBar title="Mijn Voortgang" onLogout={onLogout} />
-          <div style={{maxWidth:700, margin:"0 auto", padding:"24px 20px"}}>
-            <div style={{background:sc.bg, border:`1px solid ${sc.c}40`, borderRadius:16, padding:24, marginBottom:20, textAlign:"center", position:"relative", overflow:"hidden"}}>
-              <div style={{position:"absolute", top:0, left:0, right:0, height:3, background:sc.c}} />
-              <div style={{fontFamily:"'Cormorant Garamond',serif", fontSize:28, color:CREAM, marginBottom:4}}>Welkom, {student.name.split(" ")[0]}!</div>
-              <div style={{fontSize:18, fontWeight:700, color:sc.c, marginBottom:8}}>{sc.icon} {sc.label}</div>
-              {st==="green" && <div style={{fontSize:14, color:DIM}}>Je bent klaar voor het afvaren! Spreek een datum af met je instructeur.</div>}
-              {st==="orange" && <div style={{fontSize:14, color:DIM}}>Nog {weakSkills.length} onderdelen om te verbeteren naar een 8.</div>}
-              {st==="red" && <div style={{fontSize:14, color:DIM}}>Ga door met oefenen — je komt er. {weakSkills.length} onderdelen hebben meer aandacht nodig.</div>}
-            </div>
-
-            <div style={{display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:12, marginBottom:20}}>
-              {[
-                {l:"Uren Praktijk", v:student.praktijkUren, icon:"⏱"},
-                {l:"Gem. Score", v:avg.toFixed(1), icon:"📊"},
-                {l:"Klaar", v:`${readySkills.length}/${ALL_SKILLS.length}`, icon:"✅"},
-              ].map(x=>(
-                <div key={x.l} style={{background:SURFACE, border:`1px solid ${BORDER}`, borderRadius:12, padding:"16px 14px", textAlign:"center"}}>
-                  <div style={{fontSize:22, marginBottom:4}}>{x.icon}</div>
-                  <div style={{fontSize:22, fontWeight:700, color:GOLD, fontFamily:"'Cormorant Garamond',serif"}}>{x.v}</div>
-                  <div style={{fontSize:11, color:DIM}}>{x.l}</div>
-                </div>
-              ))}
-            </div>
-
-            <div style={{display:"flex", gap:10, marginBottom:20, flexWrap:"wrap"}}>
-              <div style={{background:student.theorie?`rgba(34,196,138,0.1)`:CARD, border:`1px solid ${student.theorie?GREEN:BORDER}`, borderRadius:8, padding:"8px 14px", fontSize:13, color:student.theorie?GREEN:DIM}}>
-                {student.theorie?"✅ Theorie behaald":"❌ Theorie nog niet"}</div>
-              {student.examDatum && <div style={{background:`rgba(200,168,74,0.1)`, border:`1px solid ${GOLD_D}`, borderRadius:8, padding:"8px 14px", fontSize:13, color:GOLD}}>📅 Examen: {student.examDatum}</div>}
-            </div>
-
-            <div style={{fontFamily:"'Cormorant Garamond',serif", fontSize:20, color:CREAM, marginBottom:14}}>Onderdelen</div>
-            <div style={{display:"grid", gap:10, marginBottom:20}}>
-              {CATS.map(c=>{
-                const catLatests = c.skills.map(s=>latest(student.scores,s));
-                const done = catLatests.filter(v=>v!==null);
-                const catAvg = done.length ? done.reduce((a,b)=>a+b,0)/done.length : 0;
-                const catReady = done.length===c.skills.length && done.every(v=>v>=8);
-                const expanded = tab===c.id;
-                return (
-                  <div key={c.id} style={{background:SURFACE, border:`1px solid ${expanded?GOLD:BORDER}`, borderRadius:12, overflow:"hidden"}}>
-                    <button onClick={()=>setTab(expanded?null:c.id)} style={{width:"100%", background:"none", border:"none", padding:"16px 20px", cursor:"pointer", display:"flex", alignItems:"center", gap:12, textAlign:"left"}}>
-                      <span style={{fontSize:22}}>{c.emoji}</span>
-                      <div style={{flex:1}}>
-                        <div style={{fontSize:15, fontWeight:600, color:TEXT, marginBottom:4}}>{c.label}</div>
-                        <div style={{display:"flex", alignItems:"center", gap:8}}>
-                          <div style={{width:120, height:4, background:BORDER, borderRadius:2, overflow:"hidden"}}>
-                            <div style={{height:"100%", width:`${catAvg*10}%`, background:sColor(Math.round(catAvg)), borderRadius:2}} />
-                          </div>
-                          <span style={{fontSize:12, color:sColor(Math.round(catAvg)), fontWeight:600}}>{catAvg.toFixed(1)}</span>
-                        </div>
-                      </div>
-                      <div style={{fontSize:12, color:catReady?GREEN:DIM}}>{catReady?"✅ Klaar":`${done.length}/${c.skills.length}`}</div>
-                      <span style={{color:DIM, fontSize:14}}>{expanded?"▲":"▼"}</span>
-                    </button>
-                    {expanded && (
-                      <div style={{borderTop:`1px solid ${BORDER}`, padding:"10px 20px 16px"}}>
-                        {c.skills.map(skill=>{
-                          const scores = student.scores[skill]||[];
-                          const last = scores.length?scores[scores.length-1]:null;
-                          const ready = last!==null&&last>=8;
-                          return (
-                            <div key={skill} style={{display:"flex", alignItems:"center", gap:10, padding:"8px 0", borderBottom:`1px solid ${BORDER}18`}}>
-                              <div style={{fontSize:12, color:ready?TEXT:DIM, minWidth:160}}>{skill}</div>
-                              <MiniBar scores={scores} />
-                              <ScoreBar score={last} />
-                              <div style={{minWidth:72, fontSize:11, color:ready?GREEN:last&&last>=6?ORANGE:last?RED:DIM, textAlign:"right"}}>
-                                {last===null?"Nog niet":ready?"✓ Klaar":last>=6?"Oefenen":"Hulp"}
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-
-            {weakSkills.length>0 && (
-              <div style={{background:SURFACE, border:`1px solid ${BORDER}`, borderRadius:12, padding:20}}>
-                <div style={{fontFamily:"'Cormorant Garamond',serif", fontSize:18, color:CREAM, marginBottom:12}}>⚠️ Aandachtspunten</div>
-                <div style={{display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))", gap:8}}>
-                  {weakSkills.map(s=>{const v=latest(student.scores,s); return(
-                    <div key={s} style={{background:CARD, borderRadius:8, padding:"8px 12px", border:`1px solid ${v&&v>=6?ORANGE+'40':BORDER}`}}>
-                      <div style={{fontSize:13, color:TEXT}}>{s}</div>
-                      <div style={{fontSize:11, color:v?sColor(v):DIM, marginTop:2}}>{v?`Laatste: ${v}`:"Nog niet gedaan"}</div>
-                    </div>
-                  );})}
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      );
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      position: "absolute",
+      top: 0,
+      left: 0,
+      right: 0,
+      height: 3,
+      background: sc.c
     }
+  }), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      flexWrap: "wrap",
+      gap: 16,
+      alignItems: "flex-start",
+      justifyContent: "space-between"
+    }
+  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontFamily: "'Cormorant Garamond',serif",
+      fontSize: 24,
+      color: CREAM
+    }
+  }, fresh.name), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 13,
+      color: DIM,
+      marginTop: 3
+    }
+  }, fresh.email, " \xB7 ", fresh.phone), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      gap: 16,
+      marginTop: 12,
+      flexWrap: "wrap"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: sc.bg,
+      border: `1px solid ${sc.c}40`,
+      borderRadius: 8,
+      padding: "6px 14px",
+      fontSize: 13,
+      color: sc.c,
+      fontWeight: 600
+    }
+  }, sc.icon, " ", sc.label), /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: CARD,
+      border: `1px solid ${BORDER}`,
+      borderRadius: 8,
+      padding: "6px 14px",
+      fontSize: 13,
+      color: TEXT
+    }
+  }, "\u23F1 ", fresh.praktijkUren, " uren praktijk"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: fresh.theorie ? `rgba(34,196,138,0.12)` : CARD,
+      border: `1px solid ${fresh.theorie ? GREEN : BORDER}`,
+      borderRadius: 8,
+      padding: "6px 14px",
+      fontSize: 13,
+      color: fresh.theorie ? GREEN : DIM,
+      cursor: "pointer"
+    },
+    onClick: onToggleTheorie
+  }, fresh.theorie ? "✅ Theorie behaald" : "❌ Theorie nog niet"))), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      gap: 8,
+      flexWrap: "wrap"
+    }
+  }, !editDate ? /*#__PURE__*/React.createElement("button", {
+    onClick: () => setEditDate(true),
+    style: {
+      background: CARD,
+      border: `1px solid ${BORDER}`,
+      color: DIM,
+      padding: "7px 14px",
+      borderRadius: 8,
+      cursor: "pointer",
+      fontSize: 12,
+      fontFamily: "'Outfit',sans-serif"
+    }
+  }, fresh.examDatum ? `📅 ${fresh.examDatum}` : "📅 Examen datum") : /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      gap: 6,
+      alignItems: "center"
+    }
+  }, /*#__PURE__*/React.createElement("input", {
+    type: "date",
+    value: dateVal,
+    onChange: e => setDateVal(e.target.value),
+    style: {
+      ...inp,
+      width: "auto",
+      fontSize: 12,
+      padding: "6px 10px"
+    }
+  }), /*#__PURE__*/React.createElement(Btn, {
+    size: "sm",
+    onClick: () => {
+      onUpdateExamDate(dateVal);
+      setEditDate(false);
+    }
+  }, "Opslaan"), /*#__PURE__*/React.createElement(Btn, {
+    size: "sm",
+    variant: "ghost",
+    onClick: () => setEditDate(false)
+  }, "\u2715")), /*#__PURE__*/React.createElement(Btn, {
+    onClick: onAddLesson,
+    size: "sm"
+  }, "+ Les toevoegen")))), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      gap: 8,
+      marginBottom: 16,
+      overflowX: "auto",
+      paddingBottom: 4
+    }
+  }, CATS.map((c, i) => {
+    const catLatests = c.skills.map(s => latest(fresh.scores, s)).filter(v => v !== null);
+    const catAvg = catLatests.length ? catLatests.reduce((a, b) => a + b, 0) / catLatests.length : 0;
+    const catReady = catLatests.length === c.skills.length && catLatests.every(v => v >= 8);
+    return /*#__PURE__*/React.createElement("button", {
+      key: c.id,
+      onClick: () => setTab(i),
+      style: {
+        padding: "8px 16px",
+        borderRadius: 8,
+        cursor: "pointer",
+        whiteSpace: "nowrap",
+        background: tab === i ? `${GOLD}18` : CARD,
+        border: `1px solid ${tab === i ? GOLD : BORDER}`,
+        color: tab === i ? GOLD : DIM,
+        fontFamily: "'Outfit',sans-serif",
+        fontSize: 13,
+        fontWeight: tab === i ? 600 : 400,
+        transition: "all 0.18s"
+      }
+    }, c.emoji, " ", c.label, catReady && /*#__PURE__*/React.createElement("span", {
+      style: {
+        color: GREEN,
+        marginLeft: 4
+      }
+    }, "\u2713"));
+  })), /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: SURFACE,
+      border: `1px solid ${BORDER}`,
+      borderRadius: 14,
+      overflow: "hidden",
+      marginBottom: 20
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      padding: "16px 20px",
+      borderBottom: `1px solid ${BORDER}`,
+      display: "flex",
+      alignItems: "center",
+      gap: 8
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontSize: 20
+    }
+  }, cat.emoji), /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontFamily: "'Cormorant Garamond',serif",
+      fontSize: 18,
+      color: CREAM
+    }
+  }, cat.label)), cat.skills.map(skill => {
+    const scores = fresh.scores[skill] || [];
+    const last = scores.length ? scores[scores.length - 1] : null;
+    const ready = last !== null && last >= 8;
+    return /*#__PURE__*/React.createElement("div", {
+      key: skill,
+      style: {
+        padding: "14px 20px",
+        borderBottom: `1px solid ${BORDER}18`,
+        display: "flex",
+        alignItems: "center",
+        gap: 12
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        minWidth: 170,
+        fontSize: 14,
+        color: ready ? TEXT : last && last >= 6 ? TEXT : DIM
+      }
+    }, skill), /*#__PURE__*/React.createElement(MiniBar, {
+      scores: scores
+    }), /*#__PURE__*/React.createElement(ScoreBar, {
+      score: last
+    }), /*#__PURE__*/React.createElement("div", {
+      style: {
+        minWidth: 80,
+        fontSize: 11,
+        color: ready ? GREEN : last && last >= 6 ? ORANGE : last ? RED : DIM,
+        textAlign: "right"
+      }
+    }, last === null ? "–" : last >= 8 ? "✓ Klaar" : last >= 6 ? "Oefenen" : "Hulp nodig"));
+  })), (fresh.notes || []).length > 0 && /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: SURFACE,
+      border: `1px solid ${BORDER}`,
+      borderRadius: 14,
+      padding: 20
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontFamily: "'Cormorant Garamond',serif",
+      fontSize: 18,
+      color: CREAM,
+      marginBottom: 14
+    }
+  }, "\uD83D\uDCDD Notities"), fresh.notes.map((n, i) => /*#__PURE__*/React.createElement("div", {
+    key: i,
+    style: {
+      borderLeft: `2px solid ${GOLD_D}`,
+      paddingLeft: 14,
+      marginBottom: 10
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 11,
+      color: DIM,
+      marginBottom: 3
+    }
+  }, n.date), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 14,
+      color: TEXT
+    }
+  }, n.text))))));
+}
 
-    // ── ROOT ──────────────────────────────────────────────────────────────────
-    function BonVibeApp() {
-      const [view,       setView]       = useState("login");
-      const [user,       setUser]       = useState(null);
-      const [students,   setStudents]   = useState(SEED);
-      const [selected,   setSelected]   = useState(null);
-      const [role,       setRole]       = useState(null);
-      const [pass,       setPass]       = useState("");
-      const [sid,        setSid]        = useState("");
-      const [err,        setErr]        = useState("");
-      const [showLesson, setShowLesson] = useState(false);
-      const [showAdd,    setShowAdd]    = useState(false);
-      const [lScores,    setLScores]    = useState({});
-      const [lNote,      setLNote]      = useState("");
-      const [newS,       setNewS]       = useState({name:"",phone:"",email:"",password:""});
+// ── ADD LESSON PANEL ──────────────────────────────────────────────────────────
+function AddLessonPanel({
+  student,
+  scores,
+  setScores,
+  note,
+  setNote,
+  onSave,
+  onCancel
+}) {
+  const [tab, setTab] = useState(0);
+  const cat = CATS[tab];
+  const totalSet = Object.keys(scores).length;
+  return /*#__PURE__*/React.createElement("div", {
+    style: {
+      position: "fixed",
+      inset: 0,
+      background: "rgba(6,15,26,0.88)",
+      zIndex: 200,
+      display: "flex",
+      flexDirection: "column",
+      justifyContent: "flex-end"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: SURFACE,
+      borderTop: `1px solid ${BORDER}`,
+      borderRadius: "20px 20px 0 0",
+      padding: 0,
+      maxHeight: "85vh",
+      overflow: "hidden",
+      display: "flex",
+      flexDirection: "column"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      padding: "20px 24px 16px",
+      borderBottom: `1px solid ${BORDER}`,
+      display: "flex",
+      justifyContent: "space-between",
+      alignItems: "center",
+      flexShrink: 0
+    }
+  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontFamily: "'Cormorant Garamond',serif",
+      fontSize: 20,
+      color: GOLD
+    }
+  }, "Les Toevoegen"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 12,
+      color: DIM,
+      marginTop: 2
+    }
+  }, student.name, " \xB7 ", totalSet, " van ", ALL_SKILLS.length, " ingevuld")), /*#__PURE__*/React.createElement("button", {
+    onClick: onCancel,
+    style: {
+      background: "none",
+      border: `1px solid ${BORDER}`,
+      color: DIM,
+      padding: "5px 12px",
+      borderRadius: 6,
+      cursor: "pointer",
+      fontSize: 13,
+      fontFamily: "'Outfit',sans-serif"
+    }
+  }, "\u2715 Annuleren")), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      gap: 8,
+      padding: "12px 20px",
+      borderBottom: `1px solid ${BORDER}`,
+      overflowX: "auto",
+      flexShrink: 0
+    }
+  }, CATS.map((c, i) => {
+    const catDone = c.skills.every(s => scores[s] !== undefined);
+    return /*#__PURE__*/React.createElement("button", {
+      key: c.id,
+      onClick: () => setTab(i),
+      style: {
+        padding: "6px 14px",
+        borderRadius: 7,
+        cursor: "pointer",
+        whiteSpace: "nowrap",
+        background: tab === i ? `${GOLD}18` : CARD,
+        border: `1px solid ${tab === i ? GOLD : BORDER}`,
+        color: tab === i ? GOLD : DIM,
+        fontFamily: "'Outfit',sans-serif",
+        fontSize: 13,
+        fontWeight: tab === i ? 600 : 400
+      }
+    }, c.emoji, " ", c.label, " ", catDone && /*#__PURE__*/React.createElement("span", {
+      style: {
+        color: GREEN
+      }
+    }, "\u2713"));
+  })), /*#__PURE__*/React.createElement("div", {
+    style: {
+      overflowY: "auto",
+      flex: 1,
+      padding: "16px 24px"
+    }
+  }, cat.skills.map(skill => {
+    const val = scores[skill] ?? null;
+    return /*#__PURE__*/React.createElement("div", {
+      key: skill,
+      style: {
+        marginBottom: 20
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+        marginBottom: 8
+      }
+    }, /*#__PURE__*/React.createElement("span", {
+      style: {
+        fontSize: 14,
+        color: TEXT
+      }
+    }, skill), /*#__PURE__*/React.createElement("span", {
+      style: {
+        fontSize: 20,
+        fontWeight: 700,
+        color: sColor(val),
+        minWidth: 32,
+        textAlign: "right"
+      }
+    }, val ?? "-")), /*#__PURE__*/React.createElement("input", {
+      type: "range",
+      min: 1,
+      max: 10,
+      step: 1,
+      value: val ?? 5,
+      onChange: e => setScores({
+        ...scores,
+        [skill]: parseInt(e.target.value)
+      }),
+      style: {
+        width: "100%",
+        accentColor: val ? sColor(val) : DIM,
+        cursor: "pointer"
+      }
+    }), /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: "flex",
+        justifyContent: "space-between",
+        marginTop: 4
+      }
+    }, [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(n => /*#__PURE__*/React.createElement("span", {
+      key: n,
+      style: {
+        fontSize: 10,
+        color: val === n ? sColor(n) : DIM,
+        fontWeight: val === n ? 700 : 400
+      }
+    }, n))), /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: "flex",
+        gap: 8,
+        marginTop: 8
+      }
+    }, [[1, 3, "🔴 Hulp"], [4, 6, "🟠 Oef."], [7, 8, "🟢 Goed"], [9, 10, "⭐ Top"]].map(([a, b, l]) => /*#__PURE__*/React.createElement("button", {
+      key: l,
+      onClick: () => setScores({
+        ...scores,
+        [skill]: b
+      }),
+      style: {
+        flex: 1,
+        padding: "4px 0",
+        borderRadius: 5,
+        background: val >= a && val <= b ? `${sColor(b)}20` : CARD,
+        border: `1px solid ${val >= a && val <= b ? sColor(b) : BORDER}`,
+        color: val >= a && val <= b ? sColor(b) : DIM,
+        cursor: "pointer",
+        fontSize: 11,
+        fontFamily: "'Outfit',sans-serif"
+      }
+    }, l))));
+  }), /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginTop: 8
+    }
+  }, /*#__PURE__*/React.createElement("label", {
+    style: {
+      fontSize: 12,
+      color: DIM,
+      textTransform: "uppercase",
+      letterSpacing: "0.8px",
+      display: "block",
+      marginBottom: 6
+    }
+  }, "Notitie (optioneel)"), /*#__PURE__*/React.createElement("textarea", {
+    value: note,
+    onChange: e => setNote(e.target.value),
+    placeholder: "Opmerkingen over de les...",
+    style: {
+      ...inp,
+      height: 80,
+      resize: "vertical",
+      fontSize: 13
+    }
+  }))), /*#__PURE__*/React.createElement("div", {
+    style: {
+      padding: "16px 24px",
+      borderTop: `1px solid ${BORDER}`,
+      flexShrink: 0
+    }
+  }, /*#__PURE__*/React.createElement(Btn, {
+    onClick: onSave,
+    full: true,
+    size: "lg",
+    disabled: totalSet === 0
+  }, "\uD83D\uDCBE Les opslaan (", totalSet, " scores)"))));
+}
 
-      // Persist via localStorage
-      useEffect(()=>{
-        const r = storage.get("bvc-v3");
-        if(r) { try { setStudents(JSON.parse(r.value)); } catch {} }
-      },[]);
-
-      const save = (s) => {
-        setStudents(s);
-        storage.set("bvc-v3", JSON.stringify(s));
-      };
-
-      useEffect(()=>{
-        if(selected){ const f=students.find(s=>s.id===selected.id); if(f) setSelected(f); }
-      },[students]);
-
-      const doLogin=()=>{
-        if(role==="instructor"){
-          if(pass==="captain123"){setUser({type:"instructor"});setView("instructor");setErr("");}
-          else setErr("Verkeerd wachtwoord.");
-        } else {
-          const s=students.find(s=>s.id===parseInt(sid)&&s.password===pass);
-          if(s){setUser({type:"student",id:s.id});setView("student");setErr("");}
-          else setErr("Student of wachtwoord onjuist.");
+// ── STUDENT VIEW ──────────────────────────────────────────────────────────────
+function StudentView({
+  student,
+  onLogout
+}) {
+  const [tab, setTab] = useState(null); // null = overview, or cat id
+  const st = status(student);
+  const sc = STATUS[st];
+  const avg = avgAll(student.scores);
+  const weakSkills = ALL_SKILLS.filter(s => {
+    const v = latest(student.scores, s);
+    return v === null || v < 8;
+  });
+  const readySkills = ALL_SKILLS.filter(s => {
+    const v = latest(student.scores, s);
+    return v !== null && v >= 8;
+  });
+  return /*#__PURE__*/React.createElement("div", {
+    style: {
+      minHeight: "100vh",
+      background: BG,
+      fontFamily: "'Outfit',sans-serif"
+    }
+  }, /*#__PURE__*/React.createElement(NavBar, {
+    title: "Mijn Voortgang",
+    onLogout: onLogout
+  }), /*#__PURE__*/React.createElement("div", {
+    style: {
+      maxWidth: 700,
+      margin: "0 auto",
+      padding: "24px 20px"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: sc.bg,
+      border: `1px solid ${sc.c}40`,
+      borderRadius: 16,
+      padding: 24,
+      marginBottom: 20,
+      textAlign: "center",
+      position: "relative",
+      overflow: "hidden"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      position: "absolute",
+      top: 0,
+      left: 0,
+      right: 0,
+      height: 3,
+      background: sc.c
+    }
+  }), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontFamily: "'Cormorant Garamond',serif",
+      fontSize: 28,
+      color: CREAM,
+      marginBottom: 4
+    }
+  }, "Welkom, ", student.name.split(" ")[0], "!"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 18,
+      fontWeight: 700,
+      color: sc.c,
+      marginBottom: 8
+    }
+  }, sc.icon, " ", sc.label), st === "green" && /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 14,
+      color: DIM
+    }
+  }, "Je bent klaar voor het afvaren! Spreek een datum af met je instructeur."), st === "orange" && /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 14,
+      color: DIM
+    }
+  }, "Nog ", weakSkills.length, " onderdelen om te verbeteren naar een 8."), st === "red" && /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 14,
+      color: DIM
+    }
+  }, "Ga door met oefenen \u2014 je komt er. ", weakSkills.length, " onderdelen hebben meer aandacht nodig.")), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "grid",
+      gridTemplateColumns: "repeat(3,1fr)",
+      gap: 12,
+      marginBottom: 20
+    }
+  }, [{
+    l: "Uren Praktijk",
+    v: student.praktijkUren,
+    icon: "⏱"
+  }, {
+    l: "Gem. Score",
+    v: avg.toFixed(1),
+    icon: "📊"
+  }, {
+    l: "Klaar",
+    v: `${readySkills.length}/${ALL_SKILLS.length}`,
+    icon: "✅"
+  }].map(x => /*#__PURE__*/React.createElement("div", {
+    key: x.l,
+    style: {
+      background: SURFACE,
+      border: `1px solid ${BORDER}`,
+      borderRadius: 12,
+      padding: "16px 14px",
+      textAlign: "center"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 22,
+      marginBottom: 4
+    }
+  }, x.icon), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 22,
+      fontWeight: 700,
+      color: GOLD,
+      fontFamily: "'Cormorant Garamond',serif"
+    }
+  }, x.v), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 11,
+      color: DIM
+    }
+  }, x.l)))), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      gap: 10,
+      marginBottom: 20,
+      flexWrap: "wrap"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: student.theorie ? `rgba(34,196,138,0.1)` : CARD,
+      border: `1px solid ${student.theorie ? GREEN : BORDER}`,
+      borderRadius: 8,
+      padding: "8px 14px",
+      fontSize: 13,
+      color: student.theorie ? GREEN : DIM
+    }
+  }, student.theorie ? "✅ Theorie behaald" : "❌ Theorie nog niet"), student.examDatum && /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: `rgba(200,168,74,0.1)`,
+      border: `1px solid ${GOLD_D}`,
+      borderRadius: 8,
+      padding: "8px 14px",
+      fontSize: 13,
+      color: GOLD
+    }
+  }, "\uD83D\uDCC5 Examen: ", student.examDatum)), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontFamily: "'Cormorant Garamond',serif",
+      fontSize: 20,
+      color: CREAM,
+      marginBottom: 14
+    }
+  }, "Onderdelen"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "grid",
+      gap: 10,
+      marginBottom: 20
+    }
+  }, CATS.map(c => {
+    const catLatests = c.skills.map(s => latest(student.scores, s));
+    const done = catLatests.filter(v => v !== null);
+    const catAvg = done.length ? done.reduce((a, b) => a + b, 0) / done.length : 0;
+    const catReady = done.length === c.skills.length && done.every(v => v >= 8);
+    const expanded = tab === c.id;
+    return /*#__PURE__*/React.createElement("div", {
+      key: c.id,
+      style: {
+        background: SURFACE,
+        border: `1px solid ${expanded ? GOLD : BORDER}`,
+        borderRadius: 12,
+        overflow: "hidden",
+        transition: "border-color 0.2s"
+      }
+    }, /*#__PURE__*/React.createElement("button", {
+      onClick: () => setTab(expanded ? null : c.id),
+      style: {
+        width: "100%",
+        background: "none",
+        border: "none",
+        padding: "16px 20px",
+        cursor: "pointer",
+        display: "flex",
+        alignItems: "center",
+        gap: 12,
+        textAlign: "left"
+      }
+    }, /*#__PURE__*/React.createElement("span", {
+      style: {
+        fontSize: 22
+      }
+    }, c.emoji), /*#__PURE__*/React.createElement("div", {
+      style: {
+        flex: 1
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontSize: 15,
+        fontWeight: 600,
+        color: TEXT,
+        marginBottom: 4
+      }
+    }, c.label), /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: "flex",
+        alignItems: "center",
+        gap: 8
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        width: 120,
+        height: 4,
+        background: BORDER,
+        borderRadius: 2,
+        overflow: "hidden"
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        height: "100%",
+        width: `${catAvg * 10}%`,
+        background: sColor(Math.round(catAvg)),
+        borderRadius: 2
+      }
+    })), /*#__PURE__*/React.createElement("span", {
+      style: {
+        fontSize: 12,
+        color: sColor(Math.round(catAvg)),
+        fontWeight: 600
+      }
+    }, catAvg.toFixed(1)))), /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontSize: 12,
+        color: catReady ? GREEN : DIM
+      }
+    }, catReady ? "✅ Klaar" : `${done.length}/${c.skills.length}`), /*#__PURE__*/React.createElement("span", {
+      style: {
+        color: DIM,
+        fontSize: 14
+      }
+    }, expanded ? "▲" : "▼")), expanded && /*#__PURE__*/React.createElement("div", {
+      style: {
+        borderTop: `1px solid ${BORDER}`,
+        padding: "10px 20px 16px"
+      }
+    }, c.skills.map(skill => {
+      const scores = student.scores[skill] || [];
+      const last = scores.length ? scores[scores.length - 1] : null;
+      const ready = last !== null && last >= 8;
+      return /*#__PURE__*/React.createElement("div", {
+        key: skill,
+        style: {
+          display: "flex",
+          alignItems: "center",
+          gap: 10,
+          padding: "8px 0",
+          borderBottom: `1px solid ${BORDER}18`
         }
-        setPass("");
-      };
-
-      const doLogout=()=>{setView("login");setUser(null);setRole(null);setPass("");setSid("");setErr("");setSelected(null);setShowLesson(false);setShowAdd(false);};
-
-      const doSaveLesson=()=>{
-        if(!selected||!Object.keys(lScores).length) return;
-        const updated=students.map(s=>{
-          if(s.id!==selected.id) return s;
-          const sc={...s.scores};
-          Object.entries(lScores).forEach(([k,v])=>{sc[k]=[...(sc[k]||[]),v];});
-          const notes=[...(s.notes||[])];
-          if(lNote.trim()) notes.push({date:new Date().toLocaleDateString("nl-NL"),text:lNote});
-          return{...s,scores:sc,notes,praktijkUren:s.praktijkUren+1};
-        });
-        save(updated);
-        setShowLesson(false);
-        setLScores({});
-        setLNote("");
-      };
-
-      const doAddStudent=()=>{
-        if(!newS.name||!newS.password) return;
-        const s={id:Date.now(),name:newS.name,phone:newS.phone,email:newS.email,password:newS.password,theorie:false,praktijkUren:0,examDatum:null,scores:{},notes:[]};
-        save([...students,s]);
-        setShowAdd(false);
-        setNewS({name:"",phone:"",email:"",password:""});
-      };
-
-      const doToggleTheorie=()=>{save(students.map(s=>s.id===selected.id?{...s,theorie:!s.theorie}:s));};
-      const doSetDate=(d)=>{save(students.map(s=>s.id===selected.id?{...s,examDatum:d}:s));};
-
-      const freshSelected = selected ? students.find(s=>s.id===selected.id)||selected : null;
-      const freshStudent  = user?.type==="student" ? students.find(s=>s.id===user.id)||null : null;
-
-      return (
-        <>
-          {view==="login"      && <LoginScreen role={role} setRole={setRole} pass={pass} setPass={setPass} sid={sid} setSid={setSid} err={err} onLogin={doLogin} students={students} />}
-          {view==="instructor" && <InstructorHome students={students} onSelect={s=>{setSelected(s);setView("detail");}} onLogout={doLogout} onAdd={()=>setShowAdd(true)} />}
-          {view==="detail"     && freshSelected && <StudentDetail student={freshSelected} students={students} onBack={()=>setView("instructor")} onAddLesson={()=>{setLScores({});setLNote("");setShowLesson(true);}} onToggleTheorie={doToggleTheorie} onUpdateExamDate={doSetDate} />}
-          {view==="student"    && freshStudent  && <StudentView student={freshStudent} onLogout={doLogout} />}
-          {showLesson && freshSelected && <AddLessonPanel student={freshSelected} scores={lScores} setScores={setLScores} note={lNote} setNote={setLNote} onSave={doSaveLesson} onCancel={()=>setShowLesson(false)} />}
-          {showAdd    && <AddStudentModal newS={newS} setNewS={setNewS} onSave={doAddStudent} onCancel={()=>setShowAdd(false)} />}
-        </>
-      );
+      }, /*#__PURE__*/React.createElement("div", {
+        style: {
+          fontSize: 12,
+          color: ready ? TEXT : DIM,
+          minWidth: 160
+        }
+      }, skill), /*#__PURE__*/React.createElement(MiniBar, {
+        scores: scores
+      }), /*#__PURE__*/React.createElement(ScoreBar, {
+        score: last
+      }), /*#__PURE__*/React.createElement("div", {
+        style: {
+          minWidth: 72,
+          fontSize: 11,
+          color: ready ? GREEN : last && last >= 6 ? ORANGE : last ? RED : DIM,
+          textAlign: "right"
+        }
+      }, last === null ? "Nog niet" : ready ? "✓ Klaar" : last >= 6 ? "Oefenen" : "Hulp"));
+    })));
+  })), weakSkills.length > 0 && /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: SURFACE,
+      border: `1px solid ${BORDER}`,
+      borderRadius: 12,
+      padding: 20
     }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontFamily: "'Cormorant Garamond',serif",
+      fontSize: 18,
+      color: CREAM,
+      marginBottom: 12
+    }
+  }, "\u26A0\uFE0F Aandachtspunten"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "grid",
+      gridTemplateColumns: "repeat(auto-fill,minmax(200px,1fr))",
+      gap: 8
+    }
+  }, weakSkills.map(s => {
+    const v = latest(student.scores, s);
+    return /*#__PURE__*/React.createElement("div", {
+      key: s,
+      style: {
+        background: CARD,
+        borderRadius: 8,
+        padding: "8px 12px",
+        border: `1px solid ${v && v >= 6 ? ORANGE + '40' : BORDER}`
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontSize: 13,
+        color: TEXT
+      }
+    }, s), /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontSize: 11,
+        color: v ? sColor(v) : DIM,
+        marginTop: 2
+      }
+    }, v ? `Laatste: ${v}` : "Nog niet gedaan"));
+  })))));
+}
 
-    const root = ReactDOM.createRoot(document.getElementById("root"));
-    root.render(<BonVibeApp />);
+// ── ROOT ──────────────────────────────────────────────────────────────────────
+function BonVibeApp() {
+  useEffect(() => {
+    const link = document.createElement("link");
+    link.href = "https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=Outfit:wght@300;400;500;600;700&display=swap";
+    link.rel = "stylesheet";
+    document.head.appendChild(link);
+    const style = document.createElement("style");
+    style.textContent = `
+      *{box-sizing:border-box;margin:0;padding:0;}
+      body{background:${BG};color:${TEXT};font-family:'Outfit',sans-serif;}
+      ::-webkit-scrollbar{width:4px;height:4px;}
+      ::-webkit-scrollbar-track{background:${SURFACE};}
+      ::-webkit-scrollbar-thumb{background:${GOLD_D};border-radius:2px;}
+      input[type=range]{-webkit-appearance:none;appearance:none;background:${BORDER};border-radius:4px;height:6px;outline:none;width:100%;}
+      input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:20px;background:${GOLD};border-radius:50%;cursor:pointer;border:2px solid ${GOLD_L};}
+      input,textarea,select{color-scheme:dark;}
+      button{transition:all 0.18s;}
+      @keyframes fadeUp{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:translateY(0);}}
+      .au{animation:fadeUp 0.35s ease forwards;}
+    `;
+    document.head.appendChild(style);
+    return () => {
+      document.head.removeChild(link);
+      document.head.removeChild(style);
+    };
+  }, []);
+  const [view, setView] = useState("login");
+  const [user, setUser] = useState(null);
+  const [students, setStudents] = useState(SEED);
+  const [selected, setSelected] = useState(null);
+  const [role, setRole] = useState(null);
+  const [pass, setPass] = useState("");
+  const [sid, setSid] = useState("");
+  const [err, setErr] = useState("");
+  const [showLesson, setShowLesson] = useState(false);
+  const [showAdd, setShowAdd] = useState(false);
+  const [lScores, setLScores] = useState({});
+  const [lNote, setLNote] = useState("");
+  const [newS, setNewS] = useState({
+    name: "",
+    phone: "",
+    email: "",
+    password: ""
+  });
+
+  // Persist
+  useEffect(() => {
+    (async () => {
+      try {
+        const r = await window.storage.get("bvc-v3");
+        if (r) setStudents(JSON.parse(r.value));
+      } catch {}
+    })();
+  }, []);
+  const save = async s => {
+    setStudents(s);
+    try {
+      await window.storage.set("bvc-v3", JSON.stringify(s));
+    } catch {}
+  };
+
+  // Keep selected fresh
+  useEffect(() => {
+    if (selected) {
+      const f = students.find(s => s.id === selected.id);
+      if (f) setSelected(f);
+    }
+  }, [students]);
+  const doLogin = () => {
+    if (role === "instructor") {
+      if (pass === "captain123") {
+        setUser({
+          type: "instructor"
+        });
+        setView("instructor");
+        setErr("");
+      } else setErr("Verkeerd wachtwoord.");
+    } else {
+      const s = students.find(s => s.id === parseInt(sid) && s.password === pass);
+      if (s) {
+        setUser({
+          type: "student",
+          id: s.id
+        });
+        setView("student");
+        setErr("");
+      } else setErr("Student of wachtwoord onjuist.");
+    }
+    setPass("");
+  };
+  const doLogout = () => {
+    setView("login");
+    setUser(null);
+    setRole(null);
+    setPass("");
+    setSid("");
+    setErr("");
+    setSelected(null);
+    setShowLesson(false);
+    setShowAdd(false);
+  };
+  const doSaveLesson = () => {
+    if (!selected || !Object.keys(lScores).length) return;
+    const updated = students.map(s => {
+      if (s.id !== selected.id) return s;
+      const sc = {
+        ...s.scores
+      };
+      Object.entries(lScores).forEach(([k, v]) => {
+        sc[k] = [...(sc[k] || []), v];
+      });
+      const notes = [...(s.notes || [])];
+      if (lNote.trim()) notes.push({
+        date: new Date().toLocaleDateString("nl-NL"),
+        text: lNote
+      });
+      return {
+        ...s,
+        scores: sc,
+        notes,
+        praktijkUren: s.praktijkUren + 1
+      };
+    });
+    save(updated);
+    setShowLesson(false);
+    setLScores({});
+    setLNote("");
+  };
+  const doAddStudent = () => {
+    if (!newS.name || !newS.password) return;
+    const s = {
+      id: Date.now(),
+      name: newS.name,
+      phone: newS.phone,
+      email: newS.email,
+      password: newS.password,
+      theorie: false,
+      praktijkUren: 0,
+      examDatum: null,
+      scores: {},
+      notes: []
+    };
+    const updated = [...students, s];
+    save(updated);
+    setShowAdd(false);
+    setNewS({
+      name: "",
+      phone: "",
+      email: "",
+      password: ""
+    });
+  };
+  const doToggleTheorie = () => {
+    const u = students.map(s => s.id === selected.id ? {
+      ...s,
+      theorie: !s.theorie
+    } : s);
+    save(u);
+  };
+  const doSetDate = d => {
+    const u = students.map(s => s.id === selected.id ? {
+      ...s,
+      examDatum: d
+    } : s);
+    save(u);
+  };
+  const freshSelected = selected ? students.find(s => s.id === selected.id) || selected : null;
+  const freshStudent = user?.type === "student" ? students.find(s => s.id === user.id) || null : null;
+  return /*#__PURE__*/React.createElement(React.Fragment, null, view === "login" && /*#__PURE__*/React.createElement(LoginScreen, {
+    role: role,
+    setRole: setRole,
+    pass: pass,
+    setPass: setPass,
+    sid: sid,
+    setSid: setSid,
+    err: err,
+    onLogin: doLogin,
+    students: students
+  }), view === "instructor" && /*#__PURE__*/React.createElement(InstructorHome, {
+    students: students,
+    onSelect: s => {
+      setSelected(s);
+      setView("detail");
+    },
+    onLogout: doLogout,
+    onAdd: () => setShowAdd(true)
+  }), view === "detail" && freshSelected && /*#__PURE__*/React.createElement(StudentDetail, {
+    student: freshSelected,
+    students: students,
+    onBack: () => setView("instructor"),
+    onAddLesson: () => {
+      setLScores({});
+      setLNote("");
+      setShowLesson(true);
+    },
+    onToggleTheorie: doToggleTheorie,
+    onUpdateExamDate: doSetDate
+  }), view === "student" && freshStudent && /*#__PURE__*/React.createElement(StudentView, {
+    student: freshStudent,
+    onLogout: doLogout
+  }), showLesson && freshSelected && /*#__PURE__*/React.createElement(AddLessonPanel, {
+    student: freshSelected,
+    scores: lScores,
+    setScores: setLScores,
+    note: lNote,
+    setNote: setLNote,
+    onSave: doSaveLesson,
+    onCancel: () => setShowLesson(false)
+  }), showAdd && /*#__PURE__*/React.createElement(AddStudentModal, {
+    newS: newS,
+    setNewS: setNewS,
+    onSave: doAddStudent,
+    onCancel: () => setShowAdd(false)
+  }));
+}
+// ── STORAGE (localStorage) ────────────────────────────────────────────────
+// Note: storage calls inside the app use window.storage if defined,
+// but we patch them here via a global shim
+window.storage = {
+  get: function(key) {
+    try { var v = localStorage.getItem(key); return v ? { value: v } : null; } catch(e) { return null; }
+  },
+  set: function(key, value) {
+    try { localStorage.setItem(key, value); return { value: value }; } catch(e) { return null; }
+  }
+};
+
+const root = ReactDOM.createRoot(document.getElementById("root"));
+root.render(React.createElement(BonVibeApp));
   </script>
 </body>
 </html>
