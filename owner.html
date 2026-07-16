@@ -1,0 +1,1618 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bon Vibe Captain — Instructeur</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{background:#FFFFFF;color:#1E2D45;font-family:'Outfit',sans-serif;}
+    ::-webkit-scrollbar{width:4px;height:4px;}
+    ::-webkit-scrollbar-track{background:#F0F4FB;}
+    ::-webkit-scrollbar-thumb{background:#1A4A8A;border-radius:2px;}
+    input[type=range]{-webkit-appearance:none;appearance:none;background:#C0CCE0;border-radius:4px;height:6px;outline:none;width:100%;}
+    input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:20px;background:#1A4A8A;border-radius:50%;cursor:pointer;border:2px solid #2460B0;}
+    input,textarea,select{color-scheme:light;}
+    button{transition:all 0.18s;}
+    #loading{position:fixed;inset:0;background:#FFFFFF;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;z-index:999;}
+    #loading .spinner{font-size:40px;animation:spin 1s linear infinite;}
+    #loading p{color:#5A7090;font-size:14px;}
+    #err{display:none;position:fixed;inset:0;background:#FFFFFF;padding:40px;z-index:1000;}
+    #err h2{color:#CC1111;margin-bottom:12px;}
+    #err pre{color:#1E2D45;font-size:12px;background:#F0F4FB;padding:16px;border-radius:8px;overflow:auto;}
+    @keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+  </style>
+</head>
+<body>
+<div id="loading"><div class="spinner">⚓</div><p>Bon Vibe Captain laden...</p></div>
+<div id="err"><h2>⚠️ Fout</h2><pre id="errmsg"></pre></div>
+<div id="root"></div>
+
+<script>
+window.onerror = function(msg,src,line,col,err){
+  document.getElementById('loading').style.display='none';
+  document.getElementById('err').style.display='block';
+  document.getElementById('errmsg').textContent = msg+'\nLine: '+line+'\n'+(err?err.stack:'');
+};
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js" crossorigin></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js" crossorigin></script>
+<script>
+document.getElementById('loading').style.display='none';
+try {
+const {
+  useState,
+  useEffect,
+  useCallback
+} = React;
+const SUPABASE_URL = https://civoqcttxxgivkyxzsdh.supabase.co/rest/v1/;
+const SUPABASE_KEY = sb_publishable_yaaE3BWIPE3AzCXpVZCpCA_-FUhvi2h;
+const BG = "#FFFFFF",
+  SURFACE = "#F0F4FB",
+  CARD = "#E4EAF6",
+  BORDER = "#C0CCE0";
+const GOLD = "#1A4A8A",
+  GOLD_L = "#2460B0",
+  GOLD_D = "#0D3060",
+  CREAM = "#0A1628",
+  TEXT = "#1E2D45",
+  DIM = "#5A7090";
+const RED = "#CC1111",
+  ORANGE = "#B85A00",
+  GREEN = "#007A50";
+const CATS = [{
+  id: "docking",
+  emoji: "⚓",
+  label: "Docking",
+  skills: ["Aanleggen bakboord", "Aanleggen stuurboord", "Achteruit bakboord", "Achteruit stuurboord"]
+}, {
+  id: "manoeuvres",
+  emoji: "🔄",
+  label: "Manoeuvres",
+  skills: ["Turning point", "Box parking", "Invaren box", "Uitvaren box"]
+}, {
+  id: "wind",
+  emoji: "💨",
+  label: "Wind",
+  skills: ["Tegenwind", "Wind in de rug"]
+}, {
+  id: "veiligheid",
+  emoji: "🛡️",
+  label: "Veiligheid",
+  skills: ["Veilig varen", "Spiegel gebruik", "Gascontrole", "Rust & controle"]
+}];
+const ALL_SKILLS = CATS.flatMap(c => c.skills);
+async function dbGet() {
+  const r = await fetch(`${SUPABASE_URL}/rest/v1/students?select=*&order=name`, {
+    headers: {
+      apikey: SUPABASE_KEY,
+      Authorization: `Bearer ${SUPABASE_KEY}`
+    }
+  });
+  const rows = await r.json();
+  return rows.map(row => ({
+    id: row.id,
+    name: row.name,
+    phone: row.phone || '',
+    email: row.email || '',
+    password: row.password,
+    theorie: row.theorie,
+    praktijkUren: row.praktijk_uren,
+    examDatum: row.exam_datum,
+    scores: row.scores || {},
+    notes: row.notes || []
+  }));
+}
+async function dbSave(student) {
+  const body = {
+    name: student.name,
+    phone: student.phone || '',
+    email: student.email || '',
+    password: student.password,
+    theorie: student.theorie,
+    praktijk_uren: student.praktijkUren,
+    exam_datum: student.examDatum || null,
+    scores: student.scores,
+    notes: student.notes
+  };
+  if (student.id && typeof student.id === 'number' && student.id > 1000000000000) {
+    // new student (Date.now() id = very large number, not yet in DB)
+    body.id = undefined;
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/students`, {
+      method: 'POST',
+      headers: {
+        apikey: SUPABASE_KEY,
+        Authorization: `Bearer ${SUPABASE_KEY}`,
+        'Content-Type': 'application/json',
+        Prefer: 'return=representation'
+      },
+      body: JSON.stringify(body)
+    });
+    const rows = await r.json();
+    return rows[0];
+  } else {
+    await fetch(`${SUPABASE_URL}/rest/v1/students?id=eq.${student.id}`, {
+      method: 'PATCH',
+      headers: {
+        apikey: SUPABASE_KEY,
+        Authorization: `Bearer ${SUPABASE_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(body)
+    });
+    return student;
+  }
+}
+async function dbDelete(id) {
+  await fetch(`${SUPABASE_URL}/rest/v1/students?id=eq.${id}`, {
+    method: 'DELETE',
+    headers: {
+      apikey: SUPABASE_KEY,
+      Authorization: `Bearer ${SUPABASE_KEY}`
+    }
+  });
+}
+async function dbInsert(student) {
+  const body = {
+    name: student.name,
+    phone: student.phone || '',
+    email: student.email || '',
+    password: student.password,
+    theorie: false,
+    praktijk_uren: 0,
+    exam_datum: null,
+    scores: {},
+    notes: []
+  };
+  const r = await fetch(`${SUPABASE_URL}/rest/v1/students`, {
+    method: 'POST',
+    headers: {
+      apikey: SUPABASE_KEY,
+      Authorization: `Bearer ${SUPABASE_KEY}`,
+      'Content-Type': 'application/json',
+      Prefer: 'return=representation'
+    },
+    body: JSON.stringify(body)
+  });
+  const rows = await r.json();
+  return {
+    ...body,
+    id: rows[0].id,
+    praktijkUren: 0,
+    examDatum: null,
+    scores: {},
+    notes: []
+  };
+}
+const latest = (sc, sk) => {
+  const a = sc[sk] || [];
+  return a.length ? a[a.length - 1] : null;
+};
+const avgAll = sc => {
+  const v = ALL_SKILLS.map(s => latest(sc, s)).filter(x => x !== null);
+  return v.length ? v.reduce((a, b) => a + b, 0) / v.length : 0;
+};
+const calcStatus = s => {
+  const l = ALL_SKILLS.map(sk => latest(s.scores, sk));
+  if (l.some(v => v === null)) return "red";
+  if (l.every(v => v >= 8)) return "green";
+  return avgAll(s.scores) >= 5.5 ? "orange" : "red";
+};
+const sColor = v => {
+  if (v === null) return DIM;
+  if (v >= 9) return "#00A060";
+  if (v >= 8) return GREEN;
+  if (v >= 7) return "#1A9A5A";
+  if (v >= 4) return ORANGE;
+  return RED;
+};
+const STATUS = {
+  green: {
+    c: GREEN,
+    bg: "rgba(0,212,126,0.12)",
+    label: "Examen klaar",
+    icon: "✅"
+  },
+  orange: {
+    c: ORANGE,
+    bg: "rgba(255,136,0,0.12)",
+    label: "Bijna klaar",
+    icon: "🟠"
+  },
+  red: {
+    c: RED,
+    bg: "rgba(255,51,51,0.12)",
+    label: "Nog niet klaar",
+    icon: "🔴"
+  }
+};
+const inp = {
+  width: "100%",
+  padding: "11px 14px",
+  background: CARD,
+  border: `1px solid ${BORDER}`,
+  borderRadius: 8,
+  color: TEXT,
+  fontSize: 14,
+  fontFamily: "'Outfit',sans-serif",
+  outline: "none",
+  boxSizing: "border-box"
+};
+function Btn({
+  children,
+  onClick,
+  variant = "gold",
+  size = "md",
+  full,
+  disabled
+}) {
+  const sz = {
+    sm: {
+      px: 10,
+      py: 6,
+      fs: 12
+    },
+    md: {
+      px: 18,
+      py: 10,
+      fs: 14
+    },
+    lg: {
+      px: 26,
+      py: 14,
+      fs: 16
+    }
+  }[size];
+  const vs = {
+    gold: {
+      background: `linear-gradient(135deg,${GOLD},${GOLD_L})`,
+      border: `1px solid ${GOLD_L}`,
+      color: "#FFFFFF"
+    },
+    outline: {
+      background: "transparent",
+      border: `1px solid ${GOLD}`,
+      color: GOLD
+    },
+    ghost: {
+      background: "transparent",
+      border: `1px solid ${BORDER}`,
+      color: TEXT
+    },
+    danger: {
+      background: "rgba(255,51,51,0.15)",
+      border: `1px solid ${RED}`,
+      color: RED
+    }
+  }[variant];
+  return /*#__PURE__*/React.createElement("button", {
+    onClick: onClick,
+    disabled: disabled,
+    style: {
+      ...vs,
+      padding: `${sz.py}px ${sz.px}px`,
+      borderRadius: 8,
+      fontFamily: "'Outfit',sans-serif",
+      fontSize: sz.fs,
+      fontWeight: 600,
+      cursor: disabled ? "not-allowed" : "pointer",
+      width: full ? "100%" : "auto",
+      opacity: disabled ? 0.45 : 1,
+      letterSpacing: "0.4px"
+    }
+  }, children);
+}
+function MiniBar({
+  scores
+}) {
+  return /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      gap: 2,
+      alignItems: "flex-end",
+      height: 20
+    }
+  }, (scores || []).slice(-6).map((s, i) => /*#__PURE__*/React.createElement("div", {
+    key: i,
+    style: {
+      width: 6,
+      minHeight: 2,
+      height: `${s * 10}%`,
+      background: sColor(s),
+      borderRadius: 2,
+      opacity: 0.5 + i / Math.max(scores.length - 1, 1) * 0.5
+    }
+  })));
+}
+function ScoreBar({
+  score
+}) {
+  return /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      alignItems: "center",
+      gap: 8,
+      flex: 1,
+      minWidth: 0
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      flex: 1,
+      height: 5,
+      background: BORDER,
+      borderRadius: 3,
+      overflow: "hidden"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      height: "100%",
+      width: `${(score || 0) * 10}%`,
+      background: sColor(score),
+      borderRadius: 3,
+      transition: "width 0.5s ease"
+    }
+  })), /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontSize: 13,
+      fontWeight: 700,
+      color: sColor(score),
+      minWidth: 18,
+      textAlign: "right"
+    }
+  }, score ?? "-"));
+}
+function NavBar({
+  title,
+  onBack,
+  onLogout
+}) {
+  return /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: SURFACE,
+      borderBottom: `1px solid ${BORDER}`,
+      padding: "0 20px",
+      height: 60,
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "space-between",
+      position: "sticky",
+      top: 0,
+      zIndex: 100
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      alignItems: "center",
+      gap: 12
+    }
+  }, onBack && /*#__PURE__*/React.createElement("button", {
+    onClick: onBack,
+    style: {
+      background: "none",
+      border: `1px solid ${BORDER}`,
+      color: GOLD,
+      padding: "5px 12px",
+      borderRadius: 6,
+      cursor: "pointer",
+      fontSize: 13,
+      fontFamily: "'Outfit',sans-serif"
+    }
+  }, "← Terug"), !onBack && /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontSize: 20
+    }
+  }, "⚓"), /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontFamily: "'Cormorant Garamond',serif",
+      fontSize: 18,
+      fontWeight: 700,
+      color: GOLD
+    }
+  }, title)), onLogout && /*#__PURE__*/React.createElement("button", {
+    onClick: onLogout,
+    style: {
+      background: "none",
+      border: `1px solid ${BORDER}`,
+      color: DIM,
+      padding: "5px 12px",
+      borderRadius: 6,
+      cursor: "pointer",
+      fontSize: 12,
+      fontFamily: "'Outfit',sans-serif"
+    }
+  }, "Uitloggen"));
+}
+function Spinner() {
+  return /*#__PURE__*/React.createElement("div", {
+    style: {
+      minHeight: "100vh",
+      background: BG,
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      flexDirection: "column",
+      gap: 16
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 40,
+      animation: "spin 1s linear infinite"
+    }
+  }, "⚓"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      color: DIM,
+      fontSize: 14
+    }
+  }, "Laden..."), /*#__PURE__*/React.createElement("style", null, `@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`));
+}
+function LoginScreen({
+  pass,
+  setPass,
+  err,
+  onLogin
+}) {
+  return /*#__PURE__*/React.createElement("div", {
+    style: {
+      minHeight: "100vh",
+      background: `radial-gradient(ellipse at 25% 25%,#0E2B60 0%,${BG} 65%)`,
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      padding: 20,
+      overflow: "hidden",
+      position: "relative"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      position: "fixed",
+      inset: 0,
+      pointerEvents: "none",
+      backgroundImage: `linear-gradient(${BORDER}30 1px,transparent 1px),linear-gradient(90deg,${BORDER}30 1px,transparent 1px)`,
+      backgroundSize: "56px 56px"
+    }
+  }), /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: SURFACE,
+      border: `1px solid ${BORDER}`,
+      borderRadius: 20,
+      padding: "48px 40px",
+      width: "100%",
+      maxWidth: 400,
+      position: "relative",
+      boxShadow: `0 40px 80px rgba(0,0,0,0.6),0 0 0 1px ${GOLD}30`,
+      zIndex: 1
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      position: "absolute",
+      top: 0,
+      left: 48,
+      right: 48,
+      height: 3,
+      background: `linear-gradient(90deg,transparent,${GOLD},transparent)`
+    }
+  }), /*#__PURE__*/React.createElement("div", {
+    style: {
+      textAlign: "center",
+      marginBottom: 36
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 52,
+      marginBottom: 10,
+      filter: `drop-shadow(0 0 20px ${GOLD}60)`
+    }
+  }, "⚓"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontFamily: "'Cormorant Garamond',serif",
+      fontSize: 28,
+      fontWeight: 700,
+      color: GOLD,
+      letterSpacing: "2.5px",
+      textTransform: "uppercase"
+    }
+  }, "Bon Vibe Captain"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 11,
+      color: DIM,
+      letterSpacing: "3.5px",
+      marginTop: 6,
+      textTransform: "uppercase"
+    }
+  }, "Instructeur Portaal"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginTop: 14,
+      background: `${GOLD}18`,
+      border: `1px solid ${GOLD}40`,
+      borderRadius: 8,
+      padding: "6px 18px",
+      display: "inline-block",
+      fontSize: 13,
+      color: GOLD,
+      fontWeight: 600
+    }
+  }, "🎓 Alleen voor de instructeur")), /*#__PURE__*/React.createElement("label", {
+    style: {
+      fontSize: 12,
+      color: DIM,
+      letterSpacing: "1px",
+      textTransform: "uppercase",
+      display: "block",
+      marginBottom: 6
+    }
+  }, "Wachtwoord"), /*#__PURE__*/React.createElement("input", {
+    type: "password",
+    value: pass,
+    onChange: e => setPass(e.target.value),
+    onKeyDown: e => e.key === "Enter" && onLogin(),
+    placeholder: "Voer wachtwoord in...",
+    style: {
+      ...inp,
+      marginBottom: 4
+    }
+  }), /*#__PURE__*/React.createElement("p", {
+    style: {
+      fontSize: 11,
+      color: GOLD_D,
+      marginBottom: 16
+    }
+  }, "Jouw instructeur wachtwoord"), err && /*#__PURE__*/React.createElement("p", {
+    style: {
+      color: RED,
+      fontSize: 13,
+      marginBottom: 12
+    }
+  }, err), /*#__PURE__*/React.createElement(Btn, {
+    onClick: onLogin,
+    full: true,
+    size: "lg"
+  }, "Inloggen 🎓")));
+}
+function AddStudentModal({
+  newS,
+  setNewS,
+  onSave,
+  onCancel,
+  saving
+}) {
+  return /*#__PURE__*/React.createElement("div", {
+    style: {
+      position: "fixed",
+      inset: 0,
+      background: "rgba(8,24,58,0.9)",
+      zIndex: 200,
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      padding: 20
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: SURFACE,
+      border: `1px solid ${BORDER}`,
+      borderRadius: 16,
+      padding: 32,
+      width: "100%",
+      maxWidth: 420,
+      boxShadow: "0 30px 60px rgba(0,0,0,0.6)"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontFamily: "'Cormorant Garamond',serif",
+      fontSize: 22,
+      color: GOLD,
+      marginBottom: 24
+    }
+  }, "+ Nieuwe Student"), [{
+    k: "name",
+    l: "Naam",
+    p: "Jan Pietersen"
+  }, {
+    k: "phone",
+    l: "Telefoon",
+    p: "06-12345678"
+  }, {
+    k: "email",
+    l: "Email",
+    p: "jan@email.nl"
+  }, {
+    k: "password",
+    l: "Wachtwoord voor student",
+    p: "bijv. jan123",
+    t: "text"
+  }].map(f => /*#__PURE__*/React.createElement("div", {
+    key: f.k,
+    style: {
+      marginBottom: 14
+    }
+  }, /*#__PURE__*/React.createElement("label", {
+    style: {
+      fontSize: 12,
+      color: DIM,
+      display: "block",
+      marginBottom: 5,
+      textTransform: "uppercase",
+      letterSpacing: "0.8px"
+    }
+  }, f.l), /*#__PURE__*/React.createElement("input", {
+    type: f.t || "text",
+    value: newS[f.k],
+    onChange: e => setNewS({
+      ...newS,
+      [f.k]: e.target.value
+    }),
+    placeholder: f.p,
+    style: inp
+  }))), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      gap: 10,
+      marginTop: 24
+    }
+  }, /*#__PURE__*/React.createElement(Btn, {
+    onClick: onCancel,
+    variant: "ghost",
+    full: true
+  }, "Annuleren"), /*#__PURE__*/React.createElement(Btn, {
+    onClick: onSave,
+    full: true,
+    disabled: !newS.name || !newS.password || saving
+  }, saving ? "Opslaan..." : "Student toevoegen ✓"))));
+}
+function AddLessonPanel({
+  student,
+  scores,
+  setScores,
+  note,
+  setNote,
+  onSave,
+  onCancel,
+  saving
+}) {
+  const [tab, setTab] = useState(0);
+  const cat = CATS[tab];
+  const totalSet = Object.keys(scores).length;
+  return /*#__PURE__*/React.createElement("div", {
+    style: {
+      position: "fixed",
+      inset: 0,
+      background: "rgba(8,24,58,0.92)",
+      zIndex: 200,
+      display: "flex",
+      flexDirection: "column",
+      justifyContent: "flex-end"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: SURFACE,
+      borderTop: `1px solid ${BORDER}`,
+      borderRadius: "20px 20px 0 0",
+      maxHeight: "88vh",
+      overflow: "hidden",
+      display: "flex",
+      flexDirection: "column"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      padding: "20px 24px 16px",
+      borderBottom: `1px solid ${BORDER}`,
+      display: "flex",
+      justifyContent: "space-between",
+      alignItems: "center",
+      flexShrink: 0
+    }
+  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontFamily: "'Cormorant Garamond',serif",
+      fontSize: 20,
+      color: GOLD
+    }
+  }, "📋 Les Toevoegen"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 12,
+      color: DIM,
+      marginTop: 2
+    }
+  }, student.name, " · ", totalSet, " van ", ALL_SKILLS.length, " ingevuld")), /*#__PURE__*/React.createElement("button", {
+    onClick: onCancel,
+    style: {
+      background: "none",
+      border: `1px solid ${BORDER}`,
+      color: DIM,
+      padding: "5px 12px",
+      borderRadius: 6,
+      cursor: "pointer",
+      fontSize: 13,
+      fontFamily: "'Outfit',sans-serif"
+    }
+  }, "✕ Sluiten")), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      gap: 8,
+      padding: "12px 20px",
+      borderBottom: `1px solid ${BORDER}`,
+      overflowX: "auto",
+      flexShrink: 0
+    }
+  }, CATS.map((c, i) => {
+    const done = c.skills.every(s => scores[s] !== undefined);
+    return /*#__PURE__*/React.createElement("button", {
+      key: c.id,
+      onClick: () => setTab(i),
+      style: {
+        padding: "6px 14px",
+        borderRadius: 7,
+        cursor: "pointer",
+        whiteSpace: "nowrap",
+        background: tab === i ? `${GOLD}20` : CARD,
+        border: `1px solid ${tab === i ? GOLD : BORDER}`,
+        color: tab === i ? GOLD : DIM,
+        fontFamily: "'Outfit',sans-serif",
+        fontSize: 13,
+        fontWeight: tab === i ? 600 : 400
+      }
+    }, c.emoji, " ", c.label, " ", done && /*#__PURE__*/React.createElement("span", {
+      style: {
+        color: GREEN
+      }
+    }, "✓"));
+  })), /*#__PURE__*/React.createElement("div", {
+    style: {
+      overflowY: "auto",
+      flex: 1,
+      padding: "16px 24px"
+    }
+  }, cat.skills.map(skill => {
+    const val = scores[skill] ?? null;
+    return /*#__PURE__*/React.createElement("div", {
+      key: skill,
+      style: {
+        marginBottom: 22
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+        marginBottom: 8
+      }
+    }, /*#__PURE__*/React.createElement("span", {
+      style: {
+        fontSize: 14,
+        color: TEXT,
+        fontWeight: 500
+      }
+    }, skill), /*#__PURE__*/React.createElement("span", {
+      style: {
+        fontSize: 22,
+        fontWeight: 700,
+        color: sColor(val),
+        minWidth: 36,
+        textAlign: "right"
+      }
+    }, val ?? "-")), /*#__PURE__*/React.createElement("input", {
+      type: "range",
+      min: 1,
+      max: 10,
+      step: 1,
+      value: val ?? 5,
+      onChange: e => setScores({
+        ...scores,
+        [skill]: parseInt(e.target.value)
+      }),
+      style: {
+        width: "100%",
+        accentColor: val ? sColor(val) : DIM,
+        cursor: "pointer"
+      }
+    }), /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: "flex",
+        justifyContent: "space-between",
+        marginTop: 4
+      }
+    }, [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(n => /*#__PURE__*/React.createElement("span", {
+      key: n,
+      style: {
+        fontSize: 10,
+        color: val === n ? sColor(n) : DIM,
+        fontWeight: val === n ? 700 : 400
+      }
+    }, n))), /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: "flex",
+        gap: 8,
+        marginTop: 10
+      }
+    }, [[1, 3, "🔴 Hulp"], [4, 6, "🟠 Oef."], [7, 8, "🟢 Goed"], [9, 10, "⭐ Top"]].map(([a, b, l]) => /*#__PURE__*/React.createElement("button", {
+      key: l,
+      onClick: () => setScores({
+        ...scores,
+        [skill]: b
+      }),
+      style: {
+        flex: 1,
+        padding: "5px 0",
+        borderRadius: 5,
+        background: val >= a && val <= b ? `${sColor(b)}20` : CARD,
+        border: `1px solid ${val >= a && val <= b ? sColor(b) : BORDER}`,
+        color: val >= a && val <= b ? sColor(b) : DIM,
+        cursor: "pointer",
+        fontSize: 11,
+        fontFamily: "'Outfit',sans-serif"
+      }
+    }, l))));
+  }), /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginTop: 8
+    }
+  }, /*#__PURE__*/React.createElement("label", {
+    style: {
+      fontSize: 12,
+      color: DIM,
+      textTransform: "uppercase",
+      letterSpacing: "0.8px",
+      display: "block",
+      marginBottom: 6
+    }
+  }, "Notitie (optioneel)"), /*#__PURE__*/React.createElement("textarea", {
+    value: note,
+    onChange: e => setNote(e.target.value),
+    placeholder: "Opmerkingen over de les...",
+    style: {
+      ...inp,
+      height: 80,
+      resize: "vertical",
+      fontSize: 13
+    }
+  }))), /*#__PURE__*/React.createElement("div", {
+    style: {
+      padding: "16px 24px",
+      borderTop: `1px solid ${BORDER}`,
+      flexShrink: 0
+    }
+  }, /*#__PURE__*/React.createElement(Btn, {
+    onClick: onSave,
+    full: true,
+    size: "lg",
+    disabled: totalSet === 0 || saving
+  }, saving ? "Opslaan..." : "💾 Les opslaan (" + totalSet + " scores)"))));
+}
+function StudentDetail({
+  student,
+  onBack,
+  onAddLesson,
+  onToggleTheorie,
+  onUpdateExamDate,
+  onDelete,
+  saving
+}) {
+  const [tab, setTab] = useState(0);
+  const [editDate, setEditDate] = useState(false);
+  const [dateVal, setDateVal] = useState(student.examDatum || "");
+  const [confirmDel, setConfirmDel] = useState(false);
+  const st = calcStatus(student);
+  const sc = STATUS[st];
+  const cat = CATS[tab];
+  return /*#__PURE__*/React.createElement("div", {
+    style: {
+      minHeight: "100vh",
+      background: BG,
+      fontFamily: "'Outfit',sans-serif"
+    }
+  }, /*#__PURE__*/React.createElement(NavBar, {
+    title: student.name,
+    onBack: onBack
+  }), /*#__PURE__*/React.createElement("div", {
+    style: {
+      maxWidth: 820,
+      margin: "0 auto",
+      padding: "24px 20px"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: SURFACE,
+      border: `1px solid ${BORDER}`,
+      borderRadius: 14,
+      padding: 24,
+      marginBottom: 20,
+      position: "relative",
+      overflow: "hidden"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      position: "absolute",
+      top: 0,
+      left: 0,
+      right: 0,
+      height: 3,
+      background: sc.c
+    }
+  }), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      flexWrap: "wrap",
+      gap: 16,
+      alignItems: "flex-start",
+      justifyContent: "space-between"
+    }
+  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontFamily: "'Cormorant Garamond',serif",
+      fontSize: 24,
+      color: CREAM
+    }
+  }, student.name), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 13,
+      color: DIM,
+      marginTop: 3
+    }
+  }, student.email, " · ", student.phone), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 12,
+      color: GOLD_D,
+      marginTop: 2
+    }
+  }, "🔑 Student wachtwoord: ", /*#__PURE__*/React.createElement("span", {
+    style: {
+      color: GOLD,
+      fontWeight: 600,
+      fontFamily: "monospace"
+    }
+  }, student.password)), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      gap: 12,
+      marginTop: 12,
+      flexWrap: "wrap"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: sc.bg,
+      border: `1px solid ${sc.c}40`,
+      borderRadius: 8,
+      padding: "6px 14px",
+      fontSize: 13,
+      color: sc.c,
+      fontWeight: 600
+    }
+  }, sc.icon, " ", sc.label), /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: CARD,
+      border: `1px solid ${BORDER}`,
+      borderRadius: 8,
+      padding: "6px 14px",
+      fontSize: 13,
+      color: TEXT
+    }
+  }, "⏱ ", student.praktijkUren, " uren"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: student.theorie ? "rgba(0,212,126,0.12)" : CARD,
+      border: `1px solid ${student.theorie ? GREEN : BORDER}`,
+      borderRadius: 8,
+      padding: "6px 14px",
+      fontSize: 13,
+      color: student.theorie ? GREEN : DIM,
+      cursor: "pointer"
+    },
+    onClick: onToggleTheorie
+  }, student.theorie ? "✅ Theorie behaald" : "❌ Theorie nog niet"))), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      gap: 8,
+      flexWrap: "wrap",
+      alignItems: "flex-start"
+    }
+  }, !editDate ? /*#__PURE__*/React.createElement("button", {
+    onClick: () => setEditDate(true),
+    style: {
+      background: CARD,
+      border: `1px solid ${BORDER}`,
+      color: DIM,
+      padding: "7px 14px",
+      borderRadius: 8,
+      cursor: "pointer",
+      fontSize: 12,
+      fontFamily: "'Outfit',sans-serif"
+    }
+  }, student.examDatum ? `📅 ${student.examDatum}` : "📅 Examen datum") : /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      gap: 6,
+      alignItems: "center"
+    }
+  }, /*#__PURE__*/React.createElement("input", {
+    type: "date",
+    value: dateVal,
+    onChange: e => setDateVal(e.target.value),
+    style: {
+      ...inp,
+      width: "auto",
+      fontSize: 12,
+      padding: "6px 10px"
+    }
+  }), /*#__PURE__*/React.createElement(Btn, {
+    size: "sm",
+    onClick: () => {
+      onUpdateExamDate(dateVal);
+      setEditDate(false);
+    }
+  }, "Opslaan"), /*#__PURE__*/React.createElement(Btn, {
+    size: "sm",
+    variant: "ghost",
+    onClick: () => setEditDate(false)
+  }, "✕")), /*#__PURE__*/React.createElement(Btn, {
+    onClick: onAddLesson,
+    size: "sm",
+    disabled: saving
+  }, "+ Les toevoegen"), !confirmDel ? /*#__PURE__*/React.createElement(Btn, {
+    onClick: () => setConfirmDel(true),
+    size: "sm",
+    variant: "danger"
+  }, "🗑") : /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      gap: 6,
+      alignItems: "center"
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontSize: 12,
+      color: RED
+    }
+  }, "Verwijderen?"), /*#__PURE__*/React.createElement(Btn, {
+    size: "sm",
+    variant: "danger",
+    onClick: onDelete
+  }, "Ja"), /*#__PURE__*/React.createElement(Btn, {
+    size: "sm",
+    variant: "ghost",
+    onClick: () => setConfirmDel(false)
+  }, "Nee"))))), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      gap: 8,
+      marginBottom: 16,
+      overflowX: "auto",
+      paddingBottom: 4
+    }
+  }, CATS.map((c, i) => {
+    const catL = c.skills.map(s => latest(student.scores, s)).filter(v => v !== null);
+    const catReady = catL.length === c.skills.length && catL.every(v => v >= 8);
+    return /*#__PURE__*/React.createElement("button", {
+      key: c.id,
+      onClick: () => setTab(i),
+      style: {
+        padding: "8px 16px",
+        borderRadius: 8,
+        cursor: "pointer",
+        whiteSpace: "nowrap",
+        background: tab === i ? `${GOLD}20` : CARD,
+        border: `1px solid ${tab === i ? GOLD : BORDER}`,
+        color: tab === i ? GOLD : DIM,
+        fontFamily: "'Outfit',sans-serif",
+        fontSize: 13,
+        fontWeight: tab === i ? 600 : 400
+      }
+    }, c.emoji, " ", c.label, catReady && /*#__PURE__*/React.createElement("span", {
+      style: {
+        color: GREEN,
+        marginLeft: 4
+      }
+    }, "✓"));
+  })), /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: SURFACE,
+      border: `1px solid ${BORDER}`,
+      borderRadius: 14,
+      overflow: "hidden",
+      marginBottom: 20
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      padding: "16px 20px",
+      borderBottom: `1px solid ${BORDER}`,
+      display: "flex",
+      alignItems: "center",
+      gap: 8
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontSize: 20
+    }
+  }, cat.emoji), /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontFamily: "'Cormorant Garamond',serif",
+      fontSize: 18,
+      color: CREAM
+    }
+  }, cat.label)), cat.skills.map(skill => {
+    const sc2 = student.scores[skill] || [];
+    const last = sc2.length ? sc2[sc2.length - 1] : null;
+    const ready = last !== null && last >= 8;
+    return /*#__PURE__*/React.createElement("div", {
+      key: skill,
+      style: {
+        padding: "14px 20px",
+        borderBottom: `1px solid ${BORDER}20`,
+        display: "flex",
+        alignItems: "center",
+        gap: 12
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        minWidth: 170,
+        fontSize: 14,
+        color: ready ? TEXT : last && last >= 6 ? TEXT : DIM
+      }
+    }, skill), /*#__PURE__*/React.createElement(MiniBar, {
+      scores: sc2
+    }), /*#__PURE__*/React.createElement(ScoreBar, {
+      score: last
+    }), /*#__PURE__*/React.createElement("div", {
+      style: {
+        minWidth: 80,
+        fontSize: 11,
+        color: ready ? GREEN : last && last >= 6 ? ORANGE : last ? RED : DIM,
+        textAlign: "right"
+      }
+    }, last === null ? "–" : last >= 8 ? "✓ Klaar" : last >= 6 ? "Oefenen" : "Hulp nodig"));
+  })), (student.notes || []).length > 0 && /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: SURFACE,
+      border: `1px solid ${BORDER}`,
+      borderRadius: 14,
+      padding: 20
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontFamily: "'Cormorant Garamond',serif",
+      fontSize: 18,
+      color: CREAM,
+      marginBottom: 14
+    }
+  }, "📝 Notities"), student.notes.map((n, i) => /*#__PURE__*/React.createElement("div", {
+    key: i,
+    style: {
+      borderLeft: `2px solid ${GOLD_D}`,
+      paddingLeft: 14,
+      marginBottom: 10
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 11,
+      color: DIM,
+      marginBottom: 3
+    }
+  }, n.date), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 14,
+      color: TEXT
+    }
+  }, n.text))))));
+}
+function Home({
+  students,
+  onSelect,
+  onLogout,
+  onAdd
+}) {
+  const [search, setSearch] = useState("");
+  const [filter, setFilter] = useState("all");
+  const filtered = students.filter(s => {
+    const nameOk = s.name.toLowerCase().includes(search.toLowerCase());
+    const filterOk = filter === "all" || calcStatus(s) === filter;
+    return nameOk && filterOk;
+  });
+  const counts = {
+    green: students.filter(s => calcStatus(s) === "green").length,
+    orange: students.filter(s => calcStatus(s) === "orange").length,
+    red: students.filter(s => calcStatus(s) === "red").length
+  };
+  return /*#__PURE__*/React.createElement("div", {
+    style: {
+      minHeight: "100vh",
+      background: BG
+    }
+  }, /*#__PURE__*/React.createElement(NavBar, {
+    title: "Bon Vibe Captain — Instructeur",
+    onLogout: onLogout
+  }), /*#__PURE__*/React.createElement("div", {
+    style: {
+      maxWidth: 960,
+      margin: "0 auto",
+      padding: "28px 20px"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "grid",
+      gridTemplateColumns: "repeat(3,1fr)",
+      gap: 12,
+      marginBottom: 28
+    }
+  }, [{
+    label: "Examen klaar",
+    count: counts.green,
+    c: GREEN,
+    f: "green"
+  }, {
+    label: "Bijna klaar",
+    count: counts.orange,
+    c: ORANGE,
+    f: "orange"
+  }, {
+    label: "Nog niet klaar",
+    count: counts.red,
+    c: RED,
+    f: "red"
+  }].map(x => /*#__PURE__*/React.createElement("button", {
+    key: x.f,
+    onClick: () => setFilter(filter === x.f ? "all" : x.f),
+    style: {
+      background: filter === x.f ? `${x.c}20` : SURFACE,
+      border: `2px solid ${filter === x.f ? x.c : BORDER}`,
+      borderRadius: 12,
+      padding: "18px 20px",
+      position: "relative",
+      overflow: "hidden",
+      cursor: "pointer",
+      textAlign: "left",
+      transition: "all 0.2s"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      position: "absolute",
+      top: 0,
+      left: 0,
+      right: 0,
+      height: 3,
+      background: x.c
+    }
+  }), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 34,
+      fontWeight: 700,
+      color: x.c,
+      fontFamily: "'Cormorant Garamond',serif"
+    }
+  }, x.count), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 12,
+      color: DIM,
+      marginTop: 2
+    }
+  }, x.label)))), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      gap: 12,
+      alignItems: "center",
+      marginBottom: 18,
+      flexWrap: "wrap"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontFamily: "'Cormorant Garamond',serif",
+      fontSize: 22,
+      color: CREAM,
+      flex: 1
+    }
+  }, "Mijn Studenten ", /*#__PURE__*/React.createElement("span", {
+    style: {
+      color: DIM,
+      fontSize: 16
+    }
+  }, "(", filtered.length, "/", students.length, ")")), /*#__PURE__*/React.createElement("input", {
+    value: search,
+    onChange: e => setSearch(e.target.value),
+    placeholder: "🔍 Zoeken...",
+    style: {
+      ...inp,
+      width: 200,
+      padding: "8px 12px",
+      fontSize: 13
+    }
+  }), filter !== "all" && /*#__PURE__*/React.createElement("button", {
+    onClick: () => setFilter("all"),
+    style: {
+      background: "none",
+      border: `1px solid ${BORDER}`,
+      color: DIM,
+      padding: "8px 12px",
+      borderRadius: 8,
+      cursor: "pointer",
+      fontSize: 12,
+      fontFamily: "'Outfit',sans-serif"
+    }
+  }, "✕ Filter wissen"), /*#__PURE__*/React.createElement(Btn, {
+    onClick: onAdd,
+    size: "sm"
+  }, "+ Nieuwe student")), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "grid",
+      gridTemplateColumns: "repeat(auto-fill,minmax(270px,1fr))",
+      gap: 14
+    }
+  }, filtered.map(s => {
+    const st = calcStatus(s);
+    const sc = STATUS[st];
+    const avg = avgAll(s.scores);
+    return /*#__PURE__*/React.createElement("button", {
+      key: s.id,
+      onClick: () => onSelect(s),
+      style: {
+        background: CARD,
+        border: `1px solid ${BORDER}`,
+        borderRadius: 14,
+        padding: 0,
+        cursor: "pointer",
+        textAlign: "left",
+        transition: "all 0.2s",
+        overflow: "hidden",
+        outline: "none",
+        display: "block",
+        width: "100%"
+      },
+      onMouseOver: e => {
+        e.currentTarget.style.borderColor = GOLD;
+        e.currentTarget.style.transform = "translateY(-2px)";
+      },
+      onMouseOut: e => {
+        e.currentTarget.style.borderColor = BORDER;
+        e.currentTarget.style.transform = "translateY(0)";
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        height: 3,
+        background: sc.c
+      }
+    }), /*#__PURE__*/React.createElement("div", {
+      style: {
+        padding: "18px 20px"
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "flex-start",
+        marginBottom: 10
+      }
+    }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontSize: 16,
+        fontWeight: 600,
+        color: TEXT,
+        marginBottom: 2
+      }
+    }, s.name), /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontSize: 11,
+        color: DIM
+      }
+    }, s.praktijkUren, " uur · ", s.email || "geen email")), /*#__PURE__*/React.createElement("div", {
+      style: {
+        background: sc.bg,
+        border: `1px solid ${sc.c}40`,
+        borderRadius: 6,
+        padding: "3px 8px",
+        fontSize: 11,
+        color: sc.c,
+        fontWeight: 600,
+        whiteSpace: "nowrap"
+      }
+    }, sc.icon, " ", sc.label)), /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: "flex",
+        gap: 8,
+        alignItems: "center",
+        marginBottom: 8
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontSize: 12,
+        color: DIM
+      }
+    }, "Gem."), /*#__PURE__*/React.createElement("div", {
+      style: {
+        flex: 1,
+        height: 4,
+        background: BORDER,
+        borderRadius: 2,
+        overflow: "hidden"
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        height: "100%",
+        width: `${avg * 10}%`,
+        background: sColor(Math.round(avg)),
+        borderRadius: 2
+      }
+    })), /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontSize: 13,
+        fontWeight: 700,
+        color: sColor(Math.round(avg))
+      }
+    }, avg.toFixed(1))), /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: "flex",
+        gap: 12,
+        fontSize: 11,
+        color: DIM
+      }
+    }, /*#__PURE__*/React.createElement("span", null, s.theorie ? "✅ Theorie" : "❌ Theorie"), s.examDatum && /*#__PURE__*/React.createElement("span", null, "📅 ", s.examDatum))));
+  }))));
+}
+function App() {
+  const [view, setView] = useState("login");
+  const [students, setStudents] = useState([]);
+  const [selected, setSelected] = useState(null);
+  const [pass, setPass] = useState("");
+  const [err, setErr] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [showLesson, setShowLesson] = useState(false);
+  const [showAdd, setShowAdd] = useState(false);
+  const [lScores, setLScores] = useState({});
+  const [lNote, setLNote] = useState("");
+  const [newS, setNewS] = useState({
+    name: "",
+    phone: "",
+    email: "",
+    password: ""
+  });
+  const loadStudents = useCallback(async () => {
+    setLoading(true);
+    try {
+      const data = await dbGet();
+      setStudents(data);
+    } catch (e) {
+      console.error(e);
+    }
+    setLoading(false);
+  }, []);
+  const doLogin = async () => {
+    if (pass === "captain123") {
+      setView("home");
+      setErr("");
+      await loadStudents();
+    } else setErr("Verkeerd wachtwoord.");
+    setPass("");
+  };
+  const doLogout = () => {
+    setView("login");
+    setPass("");
+    setErr("");
+    setSelected(null);
+    setShowLesson(false);
+    setShowAdd(false);
+    setStudents([]);
+  };
+  const doSaveLesson = async () => {
+    if (!selected || !Object.keys(lScores).length) return;
+    setSaving(true);
+    const updated = {
+      ...selected
+    };
+    const sc = {
+      ...updated.scores
+    };
+    Object.entries(lScores).forEach(([k, v]) => {
+      sc[k] = [...(sc[k] || []), v];
+    });
+    const notes = [...(updated.notes || [])];
+    if (lNote.trim()) notes.push({
+      date: new Date().toLocaleDateString("nl-NL"),
+      text: lNote
+    });
+    updated.scores = sc;
+    updated.notes = notes;
+    updated.praktijkUren = updated.praktijkUren + 1;
+    await dbSave(updated);
+    await loadStudents();
+    setSelected(students.find(s => s.id === selected.id) || updated);
+    setSaving(false);
+    setShowLesson(false);
+    setLScores({});
+    setLNote("");
+  };
+  const doAddStudent = async () => {
+    if (!newS.name || !newS.password) return;
+    setSaving(true);
+    await dbInsert(newS);
+    await loadStudents();
+    setSaving(false);
+    setShowAdd(false);
+    setNewS({
+      name: "",
+      phone: "",
+      email: "",
+      password: ""
+    });
+  };
+  const doToggleTheorie = async () => {
+    setSaving(true);
+    await dbSave({
+      ...selected,
+      theorie: !selected.theorie
+    });
+    await loadStudents();
+    setSaving(false);
+  };
+  const doSetDate = async d => {
+    setSaving(true);
+    await dbSave({
+      ...selected,
+      examDatum: d
+    });
+    await loadStudents();
+    setSaving(false);
+  };
+  const doDelete = async () => {
+    await dbDelete(selected.id);
+    await loadStudents();
+    setView("home");
+    setSelected(null);
+  };
+  useEffect(() => {
+    if (selected) {
+      const f = students.find(s => s.id === selected.id);
+      if (f) setSelected(f);
+    }
+  }, [students]);
+  const freshSelected = selected ? students.find(s => s.id === selected.id) || selected : null;
+  if (loading) return /*#__PURE__*/React.createElement(Spinner, null);
+  return /*#__PURE__*/React.createElement(React.Fragment, null, view === "login" && /*#__PURE__*/React.createElement(LoginScreen, {
+    pass: pass,
+    setPass: setPass,
+    err: err,
+    onLogin: doLogin
+  }), view === "home" && /*#__PURE__*/React.createElement(Home, {
+    students: students,
+    onSelect: s => {
+      setSelected(s);
+      setView("detail");
+    },
+    onLogout: doLogout,
+    onAdd: () => setShowAdd(true)
+  }), view === "detail" && freshSelected && /*#__PURE__*/React.createElement(StudentDetail, {
+    student: freshSelected,
+    onBack: () => {
+      setView("home");
+      setSelected(null);
+    },
+    onAddLesson: () => {
+      setLScores({});
+      setLNote("");
+      setShowLesson(true);
+    },
+    onToggleTheorie: doToggleTheorie,
+    onUpdateExamDate: doSetDate,
+    onDelete: doDelete,
+    saving: saving
+  }), showLesson && freshSelected && /*#__PURE__*/React.createElement(AddLessonPanel, {
+    student: freshSelected,
+    scores: lScores,
+    setScores: setLScores,
+    note: lNote,
+    setNote: setLNote,
+    onSave: doSaveLesson,
+    onCancel: () => setShowLesson(false),
+    saving: saving
+  }), showAdd && /*#__PURE__*/React.createElement(AddStudentModal, {
+    newS: newS,
+    setNewS: setNewS,
+    onSave: doAddStudent,
+    onCancel: () => setShowAdd(false),
+    saving: saving
+  }));
+}
+ReactDOM.createRoot(document.getElementById("root")).render(/*#__PURE__*/React.createElement(App, null));} catch(e) {
+  document.getElementById('err').style.display='block';
+  document.getElementById('errmsg').textContent = e.message+'\n'+e.stack;
+}
+</script>
+</body>
+</html>
